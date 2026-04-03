@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📋 タスク自動登録ツール</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <header class="bg-white shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-bold text-gray-800">📋 タスク自動登録ツール</h1>
+      <div id="auth-area"></div>
+    </div>
+  </header>
+  <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+    <div id="login-section" class="hidden">
+      <div class="text-center py-12 bg-white rounded-xl shadow-sm">
+        <p class="text-gray-600 mb-4 text-lg">Googleアカウントでログインしてください</p>
+        <a href="/auth/google" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg transition">🔑 Googleでログイン</a>
+      </div>
+    </div>
+    <div id="main-section" class="hidden space-y-6">
+      <section class="bg-white rounded-xl shadow-sm p-5">
+        <h2 class="text-lg font-semibold text-gray-700 mb-3">📧 Gmailからタスクを抽出</h2>
+        <button id="scan-btn" class="bg-green-500 hover:bg-green-600 text-white font-semibold px-5 py-2 rounded-lg transition">📧 Gmailをスキャン</button>
+        <div id="scan-status" class="mt-2 text-sm text-gray-500"></div>
+        <div id="scan-results" class="hidden mt-4">
+          <p class="text-sm font-semibold text-gray-700 mb-2">抽出されたタスク候補（チェックして登録）</p>
+          <div id="scan-task-list" class="space-y-2"></div>
+          <button id="register-selected-btn" class="mt-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded-lg transition">✅ 選択したものを登録</button>
+        </div>
+      </section>
+      <section class="bg-white rounded-xl shadow-sm p-5">
+        <h2 class="text-lg font-semibold text-gray-700 mb-3">✏️ タスクを手動追加</h2>
+        <form id="add-form" class="space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="md:col-span-2">
+              <label class="block text-sm text-gray-600 mb-1">タイトル <span class="text-red-500">*</span></label>
+              <input id="f-title" type="text" placeholder="例：企画書を提出する" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">期限日</label>
+              <input id="f-due-date" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">時刻</label>
+              <input id="f-due-time" type="time" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">優先度</label>
+              <select id="f-priority" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="high">🔴 高</option>
+                <option value="medium" selected>🟡 中</option>
+                <option value="low">🟢 低</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">カテゴリ</label>
+              <select id="f-category" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="仕事">仕事</option>
+                <option value="買い物">買い物</option>
+                <option value="家事">家事</option>
+                <option value="学校">学校</option>
+                <option value="健康">健康</option>
+                <option value="その他" selected>その他</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm text-gray-600 mb-1">メモ</label>
+              <textarea id="f-notes" rows="2" placeholder="補足情報" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded-lg transition">➕ 追加</button>
+            <span id="add-status" class="text-sm text-gray-500"></span>
+          </div>
+        </form>
+      </section>
+      <section class="bg-white rounded-xl shadow-sm p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-semibold text-gray-700">📋 タスク一覧</h2>
+          <button id="refresh-tasks-btn" class="text-sm text-blue-500 hover:text-blue-700 transition">🔄 更新</button>
+        </div>
+        <div id="task-list" class="space-y-2"><p class="text-sm text-gray-400">読み込み中...</p></div>
+      </section>
+      <section class="bg-white rounded-xl shadow-sm p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-semibold text-gray-700">📅 今週のカレンダー</h2>
+          <button id="refresh-calendar-btn" class="text-sm text-blue-500 hover:text-blue-700 transition">🔄 更新</button>
+        </div>
+        <div id="calendar-list" class="space-y-2"><p class="text-sm text-gray-400">読み込み中...</p></div>
+      </section>
+    </div>
+  </main>
+  <script>
+    function priorityBadge(p){const m={high:'<span class="inline-block bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5 rounded">🔴 高</span>',medium:'<span class="inline-block bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-0.5 rounded">🟡 中</span>',low:'<span class="inline-block bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded">🟢 低</span>'};return m[p]||m.medium;}
+    function categoryBadge(c){return `<span class="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">${c||'その他'}</span>`;}
+    function formatDate(d){if(!d)return '期限なし';const dt=new Date(d+'T00:00:00+09:00');const days=['日','月','火','水','木','金','土'];return `${dt.getMonth()+1}/${dt.getDate()}(${days[dt.getDay()]})`;}
+    function formatCalendarDate(dt,d){if(d)return formatDate(d);if(dt){const x=new Date(dt);const days=['日','月','火','水','木','金','土'];return `${x.getMonth()+1}/${x.getDate()}(${days[x.getDay()]}) ${String(x.getHours()).padStart(2,'0')}:${String(x.getMinutes()).padStart(2,'0')}`;}return '';}
+    async function apiFetch(url,opts={}){const r=await fetch(url,opts);const d=await r.json();if(!r.ok)throw new Error(d.error||'APIエラー');return d;}
+    function escapeHtml(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+    async function checkAuth(){const d=await apiFetch('/auth/status');const ls=document.getElementById('login-section'),ms=document.getElementById('main-section'),aa=document.getElementById('auth-area');if(d.loggedIn){ls.classList.add('hidden');ms.classList.remove('hidden');aa.innerHTML='<a href="/auth/logout" class="text-sm text-red-500 hover:text-red-700 transition">🚪 ログアウト</a>';loadTasks();loadCalendar();}else{ls.classList.remove('hidden');ms.classList.add('hidden');aa.innerHTML='';}}
+    async function loadTasks(){const c=document.getElementById('task-list');try{const{tasks}=await apiFetch('/api/tasks');if(!tasks||!tasks.length){c.innerHTML='<p class="text-sm text-gray-400">タスクはありません。</p>';return;}c.innerHTML=tasks.map(t=>`<div class="flex items-center gap-3 p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition" data-id="${t.id}"><div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="font-medium text-gray-800 text-sm">${escapeHtml(t.title)}</span>${priorityBadge(t.priority)}${categoryBadge(t.category)}${t.google_event_id?'<span class="inline-block bg-blue-50 text-blue-600 text-xs px-2 py-0.5 rounded">📅 カレンダー同期済</span>':''}</div><p class="text-xs text-gray-500 mt-0.5">${t.due_date?'⏰ '+formatDate(t.due_date):'期限なし'}${t.due_time?' '+t.due_time:''}${t.source?' ／ 出典: '+escapeHtml(t.source):''}</p></div><div class="flex gap-2 shrink-0"><button onclick="completeTask('${t.id}')" class="text-xs bg-green-100 hover:bg-green-200 text-green-700 px-2 py-1 rounded transition">✅ 完了</button><button onclick="deleteTask('${t.id}')" class="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded transition">🗑️ 削除</button></div></div>`).join('');}catch(e){c.innerHTML=`<p class="text-sm text-red-500">エラー: ${escapeHtml(e.message)}</p>`;}}
+    async function completeTask(id){try{await apiFetch(`/api/tasks/${id}/complete`,{method:'PATCH'});loadTasks();loadCalendar();}catch(e){alert('完了処理に失敗しました: '+e.message);}}
+    async function deleteTask(id){if(!confirm('このタスクを削除しますか？'))return;try{await apiFetch(`/api/tasks/${id}`,{method:'DELETE'});loadTasks();loadCalendar();}catch(e){alert('削除に失敗しました: '+e.message);}}
+    async function loadCalendar(){const c=document.getElementById('calendar-list');try{const{events}=await apiFetch('/api/calendar/events');if(!events||!events.length){c.innerHTML='<p class="text-sm text-gray-400">今週の予定はありません。</p>';return;}c.innerHTML=events.map(ev=>`<div class="flex items-center gap-3 p-3 border border-gray-100 rounded-lg"><span class="text-xs text-blue-600 shrink-0 w-24">${formatCalendarDate(ev.start.dateTime,ev.start.date)}</span><span class="text-sm text-gray-800">${escapeHtml(ev.summary||'（タイトルなし）')}</span></div>`).join('');}catch(e){c.innerHTML=`<p class="text-sm text-red-500">エラー: ${escapeHtml(e.message)}</p>`;}}
+    let scannedTasks=[];
+    document.getElementById('scan-btn').addEventListener('click',async()=>{const btn=document.getElementById('scan-btn'),status=document.getElementById('scan-status'),rd=document.getElementById('scan-results'),ld=document.getElementById('scan-task-list');btn.disabled=true;btn.textContent='⏳ スキャン中...';status.textContent='';rd.classList.add('hidden');try{const{tasks}=await apiFetch('/api/gmail/scan',{method:'POST'});scannedTasks=tasks||[];if(!scannedTasks.length){status.textContent='タスク候補が見つかりませんでした。';}else{status.textContent=scannedTasks.length+'件のタスク候補が見つかりました。';ld.innerHTML=scannedTasks.map((t,i)=>`<label class="flex items-start gap-3 p-3 border border-gray-100 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="scan-checkbox mt-0.5" data-index="${i}" checked /><div><div class="flex items-center gap-2 flex-wrap"><span class="font-medium text-sm text-gray-800">${escapeHtml(t.title)}</span>${priorityBadge(t.priority)}${categoryBadge(t.category)}</div><p class="text-xs text-gray-500 mt-0.5">${t.dueDate?'⏰ '+formatDate(t.dueDate):'期限なし'}${t.source?' ／ 出典: '+escapeHtml(t.source):''}</p></div></label>`).join('');rd.classList.remove('hidden');}}catch(e){status.textContent='エラー: '+e.message;}finally{btn.disabled=false;btn.textContent='📧 Gmailをスキャン';}});
+    document.getElementById('register-selected-btn').addEventListener('click',async()=>{const cbs=document.querySelectorAll('.scan-checkbox:checked');if(!cbs.length){alert('タスクを選択してください。');return;}const btn=document.getElementById('register-selected-btn');btn.disabled=true;btn.textContent='⏳ 登録中...';let ok=0;for(const cb of cbs){const t=scannedTasks[parseInt(cb.dataset.index,10)];if(!t)continue;try{await apiFetch('/api/tasks/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(t)});ok++;}catch(e){console.error(e.message);}}btn.disabled=false;btn.textContent='✅ 選択したものを登録';alert(ok+'件登録しました。');document.getElementById('scan-results').classList.add('hidden');loadTasks();loadCalendar();});
+    document.getElementById('add-form').addEventListener('submit',async(e)=>{e.preventDefault();const st=document.getElementById('add-status'),title=document.getElementById('f-title').value.trim();if(!title){st.textContent='タイトルを入力してください。';return;}const body={title,dueDate:document.getElementById('f-due-date').value||null,dueTime:document.getElementById('f-due-time').value||null,priority:document.getElementById('f-priority').value,category:document.getElementById('f-category').value,notes:document.getElementById('f-notes').value.trim()||null};st.textContent='登録中...';try{await apiFetch('/api/tasks/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});st.textContent='✅ 登録しました！';document.getElementById('add-form').reset();loadTasks();loadCalendar();setTimeout(()=>{st.textContent='';},3000);}catch(e){st.textContent='エラー: '+e.message;}});
+    document.getElementById('refresh-tasks-btn').addEventListener('click',loadTasks);
+    document.getElementById('refresh-calendar-btn').addEventListener('click',loadCalendar);
+    checkAuth();
+  </script>
+</body>
+</html>
