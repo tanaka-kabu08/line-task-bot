@@ -59,15 +59,13 @@ async function handleEvent(event, app) {
     await client.replyMessage({ replyToken, messages: messageArray });
   }
 
-  // 「メール確認」「60日分メール確認」
-  if (text === 'メール確認' || text === '60日分メール確認') {
+  // 「メール確認」
+  if (text === 'メール確認') {
     if (!tokens) {
       return reply(buildAuthRequiredMessage(userId));
     }
-    const days = text === '60日分メール確認' ? 60 : 7;
-    const scanLabel = days === 60 ? '60日分の' : '';
-    await reply({ type: 'text', text: scanLabel + 'メールをスキャン中です。少々お待ちください...' });
-    gmailService.scanEmails(tokens, days).then(async (tasks) => {
+    await reply({ type: 'text', text: 'スター付きメールをスキャン中です。少々お待ちください...' });
+    gmailService.scanEmails(tokens).then(async (tasks) => {
       if (!tasks || tasks.length === 0) {
         await client.pushMessage({ to: userId, messages: [{ type: 'text', text: 'タスクになりそうなメールは見つかりませんでした。' }] });
         return;
