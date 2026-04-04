@@ -35,13 +35,11 @@ async function scanEmails(tokens, days = 7) {
   const auth = createOAuth2Client(tokens);
   const gmail = google.gmail({ version: 'v1', auth });
 
-  const maxResults = days <= 7 ? 15 : 30;
-
   try {
     const listResponse = await gmail.users.messages.list({
       userId: 'me',
-      q: 'newer_than:' + days + 'd -category:promotions -category:social -category:forums',
-      maxResults
+      q: 'is:starred newer_than:' + days + 'd',
+      maxResults: 20
     });
 
     const messages = listResponse.data.messages || [];
