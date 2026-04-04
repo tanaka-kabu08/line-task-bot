@@ -64,18 +64,20 @@ async function handleEvent(event, app) {
     if (!tokens) {
       return reply(buildAuthRequiredMessage(userId));
     }
-    try {
-      const tasks = await gmailService.scanEmails(tokens);
+    await reply({ type: 'text', text: 'メールをスキャン中です。少々お待ちください...' });
+    gmailService.scanEmails(tokens).then(async (tasks) => {
       if (!tasks || tasks.length === 0) {
-        return reply({ type: 'text', text: 'タスクになりそうなメールは見つかりませんでした。' });
+        await client.pushMessage({ to: userId, messages: [{ type: 'text', text: 'タスクになりそうなメールは見つかりませんでした。' }] });
+        return;
       }
       const confirmId = crypto.randomUUID();
       await dbService.savePendingConfirmation(confirmId, userId, tasks);
-      return reply(lineService.buildConfirmMessage(tasks));
-    } catch (err) {
+      await client.pushMessage({ to: userId, messages: [lineService.buildConfirmMessage(tasks)] });
+    }).catch(async (err) => {
       console.error('Gmail scan error:', err.message);
-      return reply({ type: 'text', text: 'Gmailのスキャン中にエラーが発生しました。' });
-    }
+      await client.pushMessage({ to: userId, messages: [{ type: 'text', text: 'Gmailのスキャン中にエラーが発生しました。' }] });
+    });
+    return;
   }
 
   // 「全て登録」
