@@ -39,7 +39,7 @@ async function scanEmails(tokens) {
     // 直近60日のメールを検索
     const listResponse = await gmail.users.messages.list({
       userId: 'me',
-      q: 'newer_than:60d -category:promotions -category:social -category:forums -unsubscribe',
+      q: 'newer_than:60d -category:promotions -category:social -category:forums',
       maxResults: 30
     });
 
