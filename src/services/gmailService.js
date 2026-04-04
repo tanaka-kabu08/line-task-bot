@@ -31,14 +31,14 @@ function extractTextFromParts(parts) {
   return text;
 }
 
-async function scanEmails(tokens, days = 7) {
+async function scanEmails(tokens) {
   const auth = createOAuth2Client(tokens);
   const gmail = google.gmail({ version: 'v1', auth });
 
   try {
     const listResponse = await gmail.users.messages.list({
       userId: 'me',
-      q: 'is:starred newer_than:' + days + 'd',
+      q: 'is:starred',
       maxResults: 20
     });
 
