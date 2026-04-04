@@ -12,7 +12,15 @@ function createOAuth2Client() {
 }
 
 // GET /auth/google - Google ログイン開始
+// ?lineUserId=Uxxxx を受け取り、state に埋め込む
 router.get('/google', (req, res) => {
+  // LINE内ブラウザ（WebView）はGoogleがブロックするため案内ページを表示
+  const ua = req.headers['user-agent'] || '';
+  if (/Line\/i.test(ua)) {
+    const currentUrl = `${process.env.BASE_URL}/auth/google${req.query.lineUserId ? `?lineUserId=${req.query.lineUserId}` : ''}`;
+    return res.send(`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ブラウザで開いてください</title><style>body{font-family:sans-serif;padding:24px;max-width:480px;margin:0 auto;line-height:1.6}h2{color:#333}a{color:#1a73e8;word-break:break-all}.box{background:#f5f5f5;border-radius:8px;padding:16px;margin:16px 0}</style></head><body><h2>⚠️ ブラウザで開いてください</h2><p>LINEアプリ内ではGoogleログインができません。</p><p>以下のURLをコピーして <strong>Safari</strong> または <strong>Chrome</strong> で開いてください：</p><div class="box"><a href="${currentUrl}">${currentUrl}</a></div><p>URLを長押しするとコピーできます。</p></body></html>`);
+  }
+
   const oauth2Client = createOAuth2Client();
   const scopes = [
     'https://www.googleapis.com/auth/gmail.readonly',
@@ -75,13 +83,13 @@ router.get('/callback', async (req, res) => {
   }
 });
 
-// GET /auth/status - ログイン状態確認
+// GET /auth/status
 router.get('/status', (req, res) => {
   const loggedIn = !!(req.session && req.session.googleTokens);
   res.json({ loggedIn });
 });
 
-// GET /auth/logout - ログアウト
+// GET /auth/logout
 router.get('/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) console.error('Session destroy error:', err.message);
