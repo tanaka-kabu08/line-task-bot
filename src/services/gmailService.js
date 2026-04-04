@@ -31,16 +31,17 @@ function extractTextFromParts(parts) {
   return text;
 }
 
-async function scanEmails(tokens) {
+async function scanEmails(tokens, days = 7) {
   const auth = createOAuth2Client(tokens);
   const gmail = google.gmail({ version: 'v1', auth });
 
+  const maxResults = days <= 7 ? 15 : 30;
+
   try {
-    // 直近60日のメールを検索
     const listResponse = await gmail.users.messages.list({
       userId: 'me',
-      q: 'newer_than:60d -category:promotions -category:social -category:forums',
-      maxResults: 30
+      q: 'newer_than:' + days + 'd -category:promotions -category:social -category:forums',
+      maxResults
     });
 
     const messages = listResponse.data.messages || [];
