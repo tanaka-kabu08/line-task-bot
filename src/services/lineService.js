@@ -1,8 +1,9 @@
 function formatDateJP(dateStr) {
   if (!dateStr) return '期限なし';
   const days = ['日','月','火','水','木','金','土'];
-  const d = new Date(dateStr + 'T00:00:00+09:00');
-  return `${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]})`;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  return `${month}/${day}(${days[d.getDay()]})`;
 }
 
 function priorityIcon(p) { return { high:'🔴', medium:'🟡', low:'🟢' }[p] || '🟡'; }
