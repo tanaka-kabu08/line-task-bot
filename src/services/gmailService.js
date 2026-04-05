@@ -19,6 +19,7 @@ function createOAuth2Client(tokens) {
  */
 function decodeBase64Url(data) {
   if (!data) return '';
+  // base64url → base64
   const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
   const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
   return Buffer.from(padded, 'base64').toString('utf-8');
@@ -62,8 +63,10 @@ function extractTextFromParts(parts) {
 
 /**
  * スター付きメールを取得してタスクを抽出
+ * @param {Object} tokens - Google OAuthトークン
+ * @param {Set} processedIds - 処理済みメールIDのSet
  */
-async function scanEmails(tokens) {
+async function scanEmails(tokens, processedIds = new Set()) {
   const auth = createOAuth2Client(tokens);
   const gmail = google.gmail({ version: 'v1', auth });
 
@@ -74,8 +77,10 @@ async function scanEmails(tokens) {
       maxResults: 20
     });
 
-    const messages = listResponse.data.messages || [];
-    console.log('[Gmail] starred messages found: ' + messages.length);
+    const allMessages = listResponse.data.messages || [];
+    // 処理済みメールをスキップ
+    const messages = allMessages.filter(m => !processedIds.has(m.id));
+    console.log(`[Gmail] starred: ${allMessages.length}, unprocessed: ${messages.length}`);
     if (messages.length === 0) {
       return { tasks: [], scannedCount: 0 };
     }
@@ -105,22 +110,49 @@ async function scanEmails(tokens) {
           body = extractTextFromParts(detail.data.payload.parts);
         }
 
-        const bodyTruncated = body.substring(0, 500);
+        const bodyTruncated = body.substring(0, 1500);
+        console.log(`[Gmail] subject: "${subject}", bodyLen: ${body.length}`);
+
+        // 本文が短すぎる場合は件名だけでタスク作成
         if (body.length < 30) {
-          allTasks.push({ title: subject.substring(0, 40), dueDate: null, dueTime: null, priority: 'medium', category: 'その他', notes: null, source: subject.substring(0, 20) });
+          allTasks.push({
+            emailId: msg.id,
+            title: subject.substring(0, 40),
+            dueDate: null,
+            dueTime: null,
+            priority: 'medium',
+            category: 'その他',
+            notes: '本文を取得できませんでした',
+            source: subject.substring(0, 20)
+          });
           continue;
         }
-        const sep = '\n';
-        const combinedText = '件名: ' + subject + sep + sep + '本文:' + sep + bodyTruncated;
+
+        const combinedText = `件名: ${subject}\n\n本文:\n${bodyTruncated}`;
         const result = await claudeService.extractTasks(combinedText, today);
+
+        console.log(`[Gmail] tasks extracted: ${result.tasks.length}`);
         if (result.tasks && result.tasks.length > 0) {
-          const tasksWithSource = result.tasks.map(t => ({ ...t, source: t.source || subject.substring(0, 20) }));
+          const tasksWithSource = result.tasks.map(t => ({
+            ...t,
+            emailId: msg.id,
+            source: t.source || subject.substring(0, 20)
+          }));
           allTasks.push(...tasksWithSource);
         } else {
-          allTasks.push({ title: subject.substring(0, 40), dueDate: null, dueTime: null, priority: 'medium', category: 'その他', notes: null, source: subject.substring(0, 20) });
+          allTasks.push({
+            emailId: msg.id,
+            title: subject.substring(0, 40),
+            dueDate: null,
+            dueTime: null,
+            priority: 'medium',
+            category: 'その他',
+            notes: null,
+            source: subject.substring(0, 20)
+          });
         }
       } catch (msgError) {
-        console.error('Error processing message ' + msg.id + ':', msgError.message);
+        console.error(`Error processing message ${msg.id}:`, msgError.message);
       }
     }
 
