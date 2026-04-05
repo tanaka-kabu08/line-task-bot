@@ -85,7 +85,7 @@ function buildSelectMessage(tasks) {
 
   return {
     type: 'text',
-    text: `番号をタップで[登録]/[スキップ]を切り替えられます:\n\n${taskList}\n\nスキップ: ${skipCount}件 → 終わったら「決定する」を押してください。`,
+    text: `番号をタップで[登録]↔[スキップ]を切り替えられます（もう一度タップで戻せます）:\n\n${taskList}\n\nスキップ: ${skipCount}件 → 終わったら「決定する」を押してください。`,
     quickReply: { items }
   };
 }
