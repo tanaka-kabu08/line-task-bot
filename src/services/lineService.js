@@ -79,36 +79,31 @@ function buildSelectMessage(tasks) {
 
   const skipCount = tasks.filter(t => !t.selected).length;
   const taskList = tasks.map((t, i) =>
-    `${t.selected ? '[登録]' : '[スキップ]'} ${i + 1}. ${t.title}`
+    `${t.selected ? '✅' : '⏭️'} ${i + 1}. ${t.title}`
   ).join('\n');
 
   return {
     type: 'text',
-    text: `番号をタップで[登録]↔[スキップ]を切り替えられます（もう一度タップで戻せます）:\n\n${taskList}\n\nスキップ: ${skipCount}件 → 終わったら「決定する」を押してください。`,
+    text: `番号をタップで✅登録/⏭️スキップを切り替えられます（もう一度タップで戻せます）:\n\n${taskList}\n\nスキップ: ${skipCount}件 → 終わったら「決定する」を押してください。`,
     quickReply: { items }
   };
 }
 
 /**
  * 選んで登録の最終確認メッセージ（登録/スキップの内訳を表示）
- * スキップあり時に「本当にスキップしますか？」の確認を追加
  */
 function buildConfirmSelectMessage(tasks) {
   const selected = tasks.filter(t => t.selected === true);
   const skipped = tasks.filter(t => t.selected !== true);
   const lines = [
-    `登録: ${selected.length}件 / スキップ: ${skipped.length}件\n`,
-    ...selected.map(t => `[登録] ${t.title}`),
-    ...skipped.map(t => `[スキップ] ${t.title}`)
+    `✅ 登録: ${selected.length}件 / ⏭️ スキップ: ${skipped.length}件\n`,
+    ...selected.map(t => `✅ ${t.title}`),
+    ...skipped.map(t => `⏭️ ${t.title}`)
   ].join('\n');
-
-  const skippedNote = skipped.length > 0
-    ? `\n\n⚠️ ${skipped.length}件のタスクがスキップされます。本当によろしいですか？`
-    : '';
 
   return {
     type: 'text',
-    text: `${lines}${skippedNote}\n\nよろしいですか？`,
+    text: `${lines}\n\nよろしいですか？`,
     quickReply: {
       items: [
         { type: 'action', action: { type: 'message', label: '登録確定', text: '登録確定' } },
