@@ -50,7 +50,7 @@ async function handleEvent(event, app) {
   const text = event.message.text.trim();
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' }); // YYYY-MM-DD
 
-  // LINE ユーザーに紐づく Google トークンをメモリ→DBの順で取得
+  // LINE ユーザーに紐〥く Google トークンをメモリ→DBの順で取得
   const googleTokens = app.locals.googleTokens || {};
   let tokens = googleTokens[userId] || null;
   if (!tokens) {
@@ -86,8 +86,8 @@ async function handleEvent(event, app) {
     gmailService.scanEmails(tokens, processedIds).then(async ({ tasks, scannedCount }) => {
       if (!tasks || tasks.length === 0) {
         const msg = scannedCount === 0
-          ? 'スター付きメールが見つかりませんでした。\nGmailでメールに⭐スターを付けてから試してください。'
-          : `${scannedCount}件のスター付きメールをスキャンしましたが、タスクは見つかりませんでした。`;
+          ? 'スター付きメールが見つかりませんでした。\nGmailでメールて⭐スターを付けてから試してください。'
+          : `${scannedCount}件のスター付きメールをスキャンしましたが�タスクは見つかりませんでした。`;
         await client.pushMessage({ to: userId, messages: [{ type: 'text', text: msg }] });
         return;
       }
@@ -140,13 +140,13 @@ async function handleEvent(event, app) {
     if (!pending) {
       return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
     }
-    // 全件を「登録」確定で初期化
-    const allSelected = pending.tasks.map(t => ({ ...t, selected: true }));
+    // 最初の12件のみ「登録」状態で初期化（Quick Replyの上限）�それ以降はスキップ
+    const allSelected = pending.tasks.map((t, i) => ({ ...t, selected: i < 12 }));
     await dbService.savePendingConfirmation(pending.id, userId, allSelected);
     return reply(lineService.buildSelectMessage(allSelected));
   }
 
-  // 「決定」→ スキップがあれば確認画面、なければe��登録
+  // 「決定」→ スキップがあれば確認画面、なければ即登録
   if (text === '決定') {
     if (!tokens) {
       return reply(buildAuthRequiredMessage(userId));
@@ -196,7 +196,7 @@ async function handleEvent(event, app) {
     return reply(lineService.buildSelectMessage(pending.tasks));
   }
 
-  // 「N番」（タスク番号の選択/解除）
+  // 「N番ڑ�」（タスク番号の選択/解除）
   const numberMatch = text.match(/^(\d+)番$/);
   if (numberMatch) {
     const pending = await dbService.getPendingConfirmation(userId);
@@ -206,7 +206,7 @@ async function handleEvent(event, app) {
 
     const index = parseInt(numberMatch[1], 10) - 1;
     if (index < 0 || index >= pending.tasks.length) {
-      return reply({ type: 'text', text: `${numberMatch[1]}番のタスクは存在しません。` });
+      return reply({ type: 'text', text: `${numberMatch[1]}策のタスクは存在しません。` });
     }
 
     // selected フラグをトグル
@@ -295,33 +295,61 @@ async function handleEvent(event, app) {
       await dbService.deleteTask(found.id);
       return reply({ type: 'text', text: `🗑️「${found.title}」を削除しました。` });
     }
-    return reply({ type: 'text', text: 'タスク名を指定してください。例��k�3���R�n�>C�胦&+�f��4�����(���((������
-��
-�
-�����a��ex�8�g�h-9d"8���9论*�x��x�������8�8ऺ` x�Y�
-�\�[�\���	���\�[�\��˛[���
-HY�
-]��[��H��:*�z*/8�c9o�z)�x�j�h-9d"8�i�࠹论*�x��x�������8�8�k�` x���"9�n�c,��`��j��8��x��8�j��j����"B���8�d��d��i��k�*�z*/:)�y�`���x�������8�8ऺ/�8�fB��]\���\J�Z[]]�\]Z\�YY\��Y�J\�\�Y
-JNB���ۜ��ۙ�\�RYHܞ\˜�[��UURQ
+    return reply({ type: 'text', text: 'タスク名を指定してください。例：「企画書提出 削除」' });
+  }
 
-N]�Z]��\��X�K��]�T[�[���ۙ�\�X][ۊ�ۙ�\�RY\�\�Y�\�[�\���N�]\���\J[�T�\��X�K��Z[�ۙ�\�SY\��Y�J�\�[�\���JNB����8���x���c:)���i8�b��x�j��b��h��g�h-9d"��]\���\J\N�	�^	��^�	����x���az*��W�
-3���3�b;�^��Ӛf������2��7���
-#�������������?���W���(�����)�((���(�����*{�&���
-��
-�
-��
-K�f�2ˎ_���nӢZ��
-���
-��
-�
-K��S�d(���)��幌��չ�ѥ�����I����ѕ�M����ѕ�����������ѽ���̰��͕�%����(������Ё͕���ѕ�Q�ͭ̀���������х̹ͭ���ѕȡЀ���й͕���ѕ�������Ք��(��������Ёɕ���ѕɕ�Q�ͭ̀�mt�(����Ȁ�����Ёхͬ����͕���ѕ�Q�̤ͭ��(��������(����������Ёɕ���ѕɕ���݅�ЁхͭM��٥���ɕ���ѕ�Q�ͬ�хͬ��ѽ���̰��͕�%���(������ɕ���ѕɕ�Q�̹ͭ��͠�ɕ���ѕɕ���(����􁍅э�����Ȥ��(���������ͽ�����ɽȠ�ɕ���ѕ�Q�ͬ���ɽ�蜰���ȹ���ͅ����(�����(���(������Ё�����%�̀���������х̹ͭ����Ѐ���й�����%������ѕȡ	��������(�����������%�̹����Ѡ�������݅�Ё��M��٥���ٕͅAɽ���͕�����%�̡�͕�%��������%�̤�(���݅�Ё��M��٥�������ѕA������
-����ɵ�ѥ����͕�%���(��ɕ��ɸ�����M��٥����ե��I��ձ�5��ͅ���ɕ���ѕɕ�Q�̤ͭ�)�((���(����������7���3��������ӖB#������
-��
-�(���)�չ�ѥ����ե���ѡI��եɕ�5��ͅ����͕�%����(������Ё��͕Uɰ���ɽ���̹��ع	M}UI0���������輽����������������(������Ё�����Uɰ���͕�%�(��������퉅͕Uɱ����Ѡ������������U͕�%���핹����UI%
-�������С�͕�%����(����聀�퉅͕Uɱ����Ѡ���������(��ɕ��ɸ��(��������耝ѕ�М�(����ѕ��聁������
-��
-��
-��ώ#����7���3�������g�	q���/��UI3�
-K�[���
-��
-����h�8N8n8:�8+8*N8;>8~8n8�88^8C���G���v��W&�� �Ӱ�Р���GV�R�W��'G2�&�WFW#�
+  // タスクが抽出された場合 → 確認メッセージを送る
+  if (result.tasks && result.tasks.length > 0) {
+    if (!tokens) {
+      // 認証が必要な場合でも確認メッセージは送る（登録時にエラーになる）
+      // ここでは認証要求メッセージを返す
+      return reply(buildAuthRequiredMessage(userId));
+    }
+
+    const confirmId = crypto.randomUUID();
+    await dbService.savePendingConfirmation(confirmId, userId, result.tasks);
+    return reply(lineService.buildConfirmMessage(result.tasks));
+  }
+
+  // タスクが見つからなかった場合
+  return reply({
+    type: 'text',
+    text: 'タスクが見つかりませんでした。「明日14時に歯医者」のように送ってみてください。'
+  });
+}
+
+/**
+ * 選択済みタスクを登録して結果メッセージを返す
+ */
+async function doRegisterSelected(pending, tokens, userId) {
+  const selectedTasks = pending.tasks.filter(t => t.selected === true);
+  const registeredTasks = [];
+  for (const task of selectedTasks) {
+    try {
+      const registered = await taskService.registerTask(task, tokens, userId);
+      registeredTasks.push(registered);
+    } catch (err) {
+      console.error('registerTask error:', err.message);
+    }
+  }
+  const emailIds = pending.tasks.map(t => t.emailId).filter(Boolean);
+  if (emailIds.length > 0) await dbService.saveProcessedEmailIds(userId, emailIds);
+  await dbService.deletePendingConfirmation(userId);
+  return lineService.buildResultMessage(registeredTasks);
+}
+
+/**
+ * Google認証が必要な場合のメッセージ
+ */
+function buildAuthRequiredMessage(userId) {
+  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  const loginUrl = userId
+    ? `${baseUrl}/auth/google?lineUserId=${encodeURIComponent(userId)}`
+    : `${baseUrl}/auth/google`;
+  return {
+    type: 'text',
+    text: `Googleアカウントの認証が必要です。\n以下のURLをブラウザで開いてログインしてください:\n${loginUrl}`
+  };
+}
+
+module.exports = router;
