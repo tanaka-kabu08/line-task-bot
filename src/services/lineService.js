@@ -65,7 +65,7 @@ function buildSelectMessage(tasks) {
     type: 'action',
     action: {
       type: 'message',
-      label: `${t.selected ? '✅' : '☐'} ${i + 1}.${t.title.length > 7 ? t.title.substring(0, 7) + '…' : t.title}`,
+      label: `${i + 1}番 ${t.title.length > 9 ? t.title.substring(0, 9) + '…' : t.title}`,
       text: `${i + 1}番`
     }
   }));
@@ -74,16 +74,17 @@ function buildSelectMessage(tasks) {
   items.splice(maxItems);
   items.push({
     type: 'action',
-    action: { type: 'message', label: '✅ 決定', text: '決定' }
+    action: { type: 'message', label: '決定する', text: '決定' }
   });
 
+  const selectedCount = tasks.filter(t => t.selected).length;
   const taskList = tasks.map((t, i) =>
-    `${t.selected ? '✅' : '☐'} ${i + 1}. ${t.title}`
+    `${t.selected ? '[登録]' : '[　　]'}  ${i + 1}. ${t.title}`
   ).join('\n');
 
   return {
     type: 'text',
-    text: `登録するタスクを選んでください:\n\n${taskList}\n\n選び終わったら「決定」を押してください。`,
+    text: `番号をタップで[登録]/解除が切り替わります（複数選択可）:\n\n${taskList}\n\n選択中: ${selectedCount}件 → 終わったら「決定する」を押してください。`,
     quickReply: { items }
   };
 }
