@@ -66,7 +66,7 @@ function buildConfirmMessage(tasks) {
 }
 
 /**
- * 選んで登録用のQuick Replyメッセージを作成（選択状態を反映）
+ * 選んで登録璨のQuick Replyメッセージを作成（選択状態を反映）
  */
 function buildSelectMessage(tasks) {
   const items = tasks.map((t, i) => ({
@@ -89,10 +89,13 @@ function buildSelectMessage(tasks) {
   const taskList = tasks.map((t, i) =>
     `${t.selected ? '✅' : '⏭️'} ${i + 1}. ${stripDomains(t.title)}`
   ).join('\n');
+  const overNote = tasks.length > 12
+    ? `\n\n⚠️ 13件目以降(${tasks.length - 12}件)はボタン上限のため自動スキップ`
+    : '';
 
   return {
     type: 'text',
-    text: `番号をタップで✅登録/⏭️スキップを切り替えられます（もう一度タップで戻せます）:\n\n${taskList}\n\nスキップ: ${skipCount}件 → 終わったら「決定する」を押してください。`,
+    text: `番号をタップで✅登録/⏭️スキップを切り替えられます（もう一度タップで戻せます）:\n\n${taskList}${overNote}\n\nスキップ: ${skipCount}件 → 終わったら「決定する」を押してください。`,
     quickReply: { items }
   };
 }
