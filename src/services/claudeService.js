@@ -57,11 +57,15 @@ async function extractTasks(text, today) {
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return { tasks: [], command: null };
     const parsed = JSON.parse(jsonMatch[0]);
-    return { tasks: parsed.tasks || [], command: parsed.command || null };
-  } catch (error) {
-    console.error('Groq API error:', error.message);
-    return { tasks: [], command: null };
-  }
+    const parsed = JSON.parse(jsonMatch[0]);
+    const stripUrls = str => str ? str.replace(/https?:\/\/\S+/g, '').replace(/\s{2,}/g, ' ').trim() : str;
+    const tasks = (parsed.tasks || []).map(t => ({
+      ...t,
+      title: stripUrls(t.title),
+      notes: stripUrls(t.notes),
+      source: stripUrls(t.source)
+    }));
+    return { tasks, command: parsed.command || null };
 }
 
 module.exports = { extractTasks };
