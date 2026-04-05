@@ -59,7 +59,6 @@ function buildConfirmMessage(tasks) {
 
 /**
  * 選んで登録用のQuick Replyメッセージを作成（選択状態を反映）
- * デフォルトは全て「登録」状態。番号タップで[登録]/[スキップ]をトグル。
  */
 function buildSelectMessage(tasks) {
   const items = tasks.map((t, i) => ({
@@ -87,6 +86,35 @@ function buildSelectMessage(tasks) {
     type: 'text',
     text: `番号をタップで[登録]↔[スキップ]を切り替えられます（もう一度タップで戻せます）:\n\n${taskList}\n\nスキップ: ${skipCount}件 → 終わったら「決定する」を押してください。`,
     quickReply: { items }
+  };
+}
+
+/**
+ * 選んで登録の最終確認メッセージ（登録/スキップの内訳を表示）
+ * スキップあり時に「本当にスキップしますか？」の確認を追加
+ */
+function buildConfirmSelectMessage(tasks) {
+  const selected = tasks.filter(t => t.selected === true);
+  const skipped = tasks.filter(t => t.selected !== true);
+  const lines = [
+    `登録: ${selected.length}件 / スキップ: ${skipped.length}件\n`,
+    ...selected.map(t => `[登録] ${t.title}`),
+    ...skipped.map(t => `[スキップ] ${t.title}`)
+  ].join('\n');
+
+  const skippedNote = skipped.length > 0
+    ? `\n\n⚠️ ${skipped.length}件のタスクがスキップされます。本当によろしいですか？`
+    : '';
+
+  return {
+    type: 'text',
+    text: `${lines}${skippedNote}\n\nよろしいですか？`,
+    quickReply: {
+      items: [
+        { type: 'action', action: { type: 'message', label: '登録確定', text: '登録確定' } },
+        { type: 'action', action: { type: 'message', label: 'やり直す', text: 'やり直す' } }
+      ]
+    }
   };
 }
 
@@ -132,6 +160,7 @@ function formatTaskList(tasks) {
 module.exports = {
   buildConfirmMessage,
   buildSelectMessage,
+  buildConfirmSelectMessage,
   buildResultMessage,
   formatTaskList
 };
