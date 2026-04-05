@@ -66,20 +66,50 @@ function buildConfirmMessage(tasks) {
 }
 
 /**
- * 選んで登録璨のQuick Replyメッセージを作成（選択状態を反映）
+ * 選んで登録用のQuick Replyメッセージを作成（選択状態を反映）
  */
-function buildSelectMessage(tasks) {
-  const items = tasks.map((t, i) => ({
-    type: 'action',
-    action: {
-      type: 'message',
-      label: `${i + 1}番 ${t.title.length > 9 ? t.title.substring(0, 9) + '…' : t.title}`,
-      text: `${i + 1}番`
-    }
-  }));
+function buildSelectMessage(tasks, page = 0) {
+  const PAGE_SIZE = 10;
+  const usePagination = tasks.length > 12;
 
-  const maxItems = Math.min(items.length, 12);
-  items.splice(maxItems);
+  let displayTasks, hasPrev, hasNext;
+
+  if (!usePagination) {
+    displayTasks = tasks.map((t, i) => ({ ...t, globalIndex: i }));
+    hasPrev = false;
+    hasNext = false;
+  } else {
+    const start = page * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    displayTasks = tasks.slice(start, end).map((t, i) => ({ ...t, globalIndex: start + i }));
+    hasPrev = page > 0;
+    hasNext = end < tasks.length;
+  }
+
+  const items = [];
+  if (hasPrev) {
+    items.push({
+      type: 'action',
+      action: { type: 'message', label: '← 前の10件', text: '前へ' }
+    });
+  }
+  displayTasks.forEach(t => {
+    const i = t.globalIndex;
+    items.push({
+      type: 'action',
+      action: {
+        type: 'message',
+        label: `${i + 1}番 ${t.title.length > 9 ? t.title.substring(0, 9) + '…' : t.title}`,
+        text: `${i + 1}番`
+      }
+    });
+  });
+  if (hasNext) {
+    items.push({
+      type: 'action',
+      action: { type: 'message', label: '次の10件 →', text: '次へ' }
+    });
+  }
   items.push({
     type: 'action',
     action: { type: 'message', label: '決定する', text: '決定' }
@@ -89,13 +119,13 @@ function buildSelectMessage(tasks) {
   const taskList = tasks.map((t, i) =>
     `${t.selected ? '✅' : '⏭️'} ${i + 1}. ${stripDomains(t.title)}`
   ).join('\n');
-  const overNote = tasks.length > 12
-    ? `\n\n⚠️ 13件目以降(${tasks.length - 12}件)はボタン上限のため自動スキップ`
+  const pageInfo = usePagination
+    ? `\n\nページ ${page + 1}/${Math.ceil(tasks.length / PAGE_SIZE)}（全${tasks.length}件）`
     : '';
 
   return {
     type: 'text',
-    text: `番号をタップで✅登録/⏭️スキップを切り替えられます（もう一度タップで戻せます）:\n\n${taskList}${overNote}\n\nスキップ: ${skipCount}件 → 終わったら「決定する」を押してください。`,
+    text: `番号をタップで✅登録/⏭️スキップを切り替えられます（もう一度タップで戻せます）:\n\n${taskList}${pageInfo}\n\nスキップ: ${skipCount}件 → 終わったら「決定する」を押してください。`,
     quickReply: { items }
   };
 }
