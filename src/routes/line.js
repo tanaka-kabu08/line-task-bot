@@ -78,7 +78,7 @@ async function handleEvent(event, app) {
       await client.pushMessage({ to: userId, messages: [lineService.buildConfirmMessage(tasks)] });
     }).catch(async (err) => {
       console.error('Gmail scan error:', err.message);
-      await client.pushMessage({ to: userId, messages: [{ type: 'text', text: 'Gmailのスキャン中にエラーが発生しました。' }] });
+      await client.pushMessage({ to: userId, messages: [{ type: 'text', text: 'エラー: ' + err.message }] });
     });
     return;
   }
