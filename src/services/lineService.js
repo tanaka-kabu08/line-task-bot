@@ -59,6 +59,7 @@ function buildConfirmMessage(tasks) {
 
 /**
  * 選んで登録用のQuick Replyメッセージを作成（選択状態を反映）
+ * デフォルトは全て「登録」状態。番号タップで[登録]/[スキップ]をトグル。
  */
 function buildSelectMessage(tasks) {
   const items = tasks.map((t, i) => ({
@@ -77,14 +78,14 @@ function buildSelectMessage(tasks) {
     action: { type: 'message', label: '決定する', text: '決定' }
   });
 
-  const selectedCount = tasks.filter(t => t.selected).length;
+  const skipCount = tasks.filter(t => !t.selected).length;
   const taskList = tasks.map((t, i) =>
-    `${t.selected ? '[登録]' : '[　　]'}  ${i + 1}. ${t.title}`
+    `${t.selected ? '[登録]' : '[スキップ]'} ${i + 1}. ${t.title}`
   ).join('\n');
 
   return {
     type: 'text',
-    text: `番号をタップで[登録]/解除が切り替わります（複数選択可）:\n\n${taskList}\n\n選択中: ${selectedCount}件 → 終わったら「決定する」を押してください。`,
+    text: `番号をタップで[登録]/[スキップ]を切り替えられます:\n\n${taskList}\n\nスキップ: ${skipCount}件 → 終わったら「決定する」を押してください。`,
     quickReply: { items }
   };
 }
