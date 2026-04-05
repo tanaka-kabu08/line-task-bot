@@ -86,7 +86,7 @@ async function handleEvent(event, app) {
     gmailService.scanEmails(tokens, processedIds).then(async ({ tasks, scannedCount }) => {
       if (!tasks || tasks.length === 0) {
         const msg = scannedCount === 0
-          ? 'スター付きメールが見つかりません、\nGmailでメールに⭐スターを付けてから試してください。'
+          ? 'スター付きメールが見つかりませんでした。\nGmailでメールに⭐スターを付けてから試してください。'
           : `${scannedCount}件のスター付きメールをスキャンしましたが、タスクは見つかりませんでした。`;
         await client.pushMessage({ to: userId, messages: [{ type: 'text', text: msg }] });
         return;
@@ -140,7 +140,7 @@ async function handleEvent(event, app) {
     if (!pending) {
       return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
     }
-    // 全件「登録」確態で初期化
+    // 全件「登録」状態で初期化
     const allSelected = pending.tasks.map(t => ({ ...t, selected: true }));
     await dbService.savePendingConfirmation(pending.id, userId, allSelected, 0);
     return reply(lineService.buildSelectMessage(allSelected, 0));
@@ -333,7 +333,25 @@ async function handleEvent(event, app) {
     return reply(lineService.buildConfirmMessage(result.tasks));
   }
 
-  // タスクが見つからなかった場合
+  // タスクが見つからなかった場合 → 短いテキストはそのままタスクとして扱う
+  if (text.length <= 30 && !text.includes('\n')) {
+    if (!tokens) {
+      return reply(buildAuthRequiredMessage(userId));
+    }
+    const fallbackTask = [{
+      title: text,
+      dueDate: null,
+      dueTime: null,
+      priority: 'medium',
+      category: 'その他',
+      notes: null,
+      source: text.substring(0, 20)
+    }];
+    const confirmId = crypto.randomUUID();
+    await dbService.savePendingConfirmation(confirmId, userId, fallbackTask);
+    return reply(lineService.buildConfirmMessage(fallbackTask));
+  }
+
   return reply({
     type: 'text',
     text: 'タスクが見つかりませんでした。「明日14時に歯医者」のように送ってみてください。'
