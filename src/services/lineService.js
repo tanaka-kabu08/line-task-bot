@@ -32,7 +32,7 @@ function priorityLabel(priority) {
 function buildConfirmMessage(tasks) {
   const tasksText = tasks.map((t, i) => {
     const dateStr = t.dueDate ? formatDateJP(t.dueDate) : '期限なし';
-    return `${i + 1}. 📌 ${t.title}（${dateStr}）`;
+    return `${i + 1}. ✅ ${t.title}（${dateStr}）`;
   }).join('\n');
 
   return {
