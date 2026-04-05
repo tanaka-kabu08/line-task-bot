@@ -140,13 +140,13 @@ async function handleEvent(event, app) {
     if (!pending) {
       return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
     }
-    // 全件を「登録」状態（selected: true）でデフォルト初期化
+    // 全件を「登録」状態で初期化
     const allSelected = pending.tasks.map(t => ({ ...t, selected: true }));
     await dbService.savePendingConfirmation(pending.id, userId, allSelected);
     return reply(lineService.buildSelectMessage(allSelected));
   }
 
-  // 「決定」（選んで登録モードで選択済みタスクを登録）
+  // 「決定」→ スキップがあれば確認画面、なければ即登録
   if (text === '決定') {
     if (!tokens) {
       return reply(buildAuthRequiredMessage(userId));
@@ -157,28 +157,43 @@ async function handleEvent(event, app) {
     }
 
     const selectedTasks = pending.tasks.filter(t => t.selected === true);
+    const skippedTasks = pending.tasks.filter(t => t.selected !== true);
+
     if (selectedTasks.length === 0) {
       return reply({ type: 'text', text: 'タスクが選択されていません。番号をタップして選んでください。' });
     }
 
-    const registeredTasks = [];
-    for (const task of selectedTasks) {
-      try {
-        const registered = await taskService.registerTask(task, tokens, userId);
-        registeredTasks.push(registered);
-      } catch (err) {
-        console.error('registerTask error:', err.message);
-      }
+    // スキップがある場合は確認画面を表示
+    if (skippedTasks.length > 0) {
+      return reply(lineService.buildConfirmSelectMessage(pending.tasks));
     }
 
-    const emailIds = pending.tasks.map(t => t.emailId).filter(Boolean);
-    if (emailIds.length > 0) await dbService.saveProcessedEmailIds(userId, emailIds);
-
-    await dbService.deletePendingConfirmation(userId);
-    return reply(lineService.buildResultMessage(registeredTasks));
+    // スキップなし → 即登録
+    return reply(await doRegisterSelected(pending, tokens, userId));
   }
 
-  // 「N番」（タスク番号の選択/解除トグル）
+  // 「登録確定」（確認画面からの最終確定）
+  if (text === '登録確定') {
+    if (!tokens) {
+      return reply(buildAuthRequiredMessage(userId));
+    }
+    const pending = await dbService.getPendingConfirmation(userId);
+    if (!pending) {
+      return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
+    }
+    return reply(await doRegisterSelected(pending, tokens, userId));
+  }
+
+  // 「やり直す」→ 選択画面に戻る
+  if (text === 'やり直す') {
+    const pending = await dbService.getPendingConfirmation(userId);
+    if (!pending) {
+      return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
+    }
+    return reply(lineService.buildSelectMessage(pending.tasks));
+  }
+
+  // 「N番」（タスク番号の選択/解除）
   const numberMatch = text.match(/^(\d+)番$/);
   if (numberMatch) {
     const pending = await dbService.getPendingConfirmation(userId);
@@ -191,7 +206,7 @@ async function handleEvent(event, app) {
       return reply({ type: 'text', text: `${numberMatch[1]}番のタスクは存在しません。` });
     }
 
-    // selected フラグをトグル（[登録] ↔ [スキップ]）
+    // selected フラグをトグル
     const updatedTasks = pending.tasks.map((t, i) => {
       if (i === index) {
         return { ...t, selected: !t.selected };
@@ -298,6 +313,26 @@ async function handleEvent(event, app) {
     type: 'text',
     text: 'タスクが見つかりませんでした。「明日14時に歯医者」のように送ってみてください。'
   });
+}
+
+/**
+ * 選択済みタスクを登録して結果メッセージを返す
+ */
+async function doRegisterSelected(pending, tokens, userId) {
+  const selectedTasks = pending.tasks.filter(t => t.selected === true);
+  const registeredTasks = [];
+  for (const task of selectedTasks) {
+    try {
+      const registered = await taskService.registerTask(task, tokens, userId);
+      registeredTasks.push(registered);
+    } catch (err) {
+      console.error('registerTask error:', err.message);
+    }
+  }
+  const emailIds = pending.tasks.map(t => t.emailId).filter(Boolean);
+  if (emailIds.length > 0) await dbService.saveProcessedEmailIds(userId, emailIds);
+  await dbService.deletePendingConfirmation(userId);
+  return lineService.buildResultMessage(registeredTasks);
 }
 
 /**
