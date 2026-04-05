@@ -1,6 +1,14 @@
 /**
  * 日付を M/D(曜) 形式にフォーマット
  */
+function stripDomains(str) {
+  if (!str) return str;
+  return str
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/\b[\w.-]+\.(co\.jp|com|jp|net|org|io|app)\b\S*/g, '')
+    .replace(/\s{2,}/g, ' ').trim();
+}
+
 function formatDateJP(dateStr) {
   if (!dateStr) return '期限なし';
   const days = ['日', '月', '火', '水', '木', '金', '土'];
@@ -32,7 +40,7 @@ function priorityLabel(priority) {
 function buildConfirmMessage(tasks) {
   const tasksText = tasks.map((t, i) => {
     const dateStr = t.dueDate ? formatDateJP(t.dueDate) : '期限なし';
-    return `${i + 1}. ✅ ${t.title}（${dateStr}）`;
+    return `${i + 1}. ✅ ${stripDomains(t.title)}（${dateStr}）`;
   }).join('\n');
 
   return {
@@ -79,7 +87,7 @@ function buildSelectMessage(tasks) {
 
   const skipCount = tasks.filter(t => !t.selected).length;
   const taskList = tasks.map((t, i) =>
-    `${t.selected ? '✅' : '⏭️'} ${i + 1}. ${t.title}`
+    `${t.selected ? '✅' : '⏭️'} ${i + 1}. ${stripDomains(t.title)}`
   ).join('\n');
 
   return {
@@ -97,8 +105,8 @@ function buildConfirmSelectMessage(tasks) {
   const skipped = tasks.filter(t => t.selected !== true);
   const lines = [
     `✅ 登録: ${selected.length}件 / ⏭️ スキップ: ${skipped.length}件\n`,
-    ...selected.map(t => `✅ ${t.title}`),
-    ...skipped.map(t => `⏭️ ${t.title}`)
+    ...selected.map(t => `✅ ${stripDomains(t.title)}`),
+    ...skipped.map(t => `⏭️ ${stripDomains(t.title)}`)
   ].join('\n');
 
   return {
