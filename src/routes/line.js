@@ -65,9 +65,12 @@ async function handleEvent(event, app) {
       return reply(buildAuthRequiredMessage(userId));
     }
     await reply({ type: 'text', text: 'スター付きメールをスキャン中です。少々お待ちください...' });
-    gmailService.scanEmails(tokens).then(async (tasks) => {
+    gmailService.scanEmails(tokens).then(async ({ tasks, scannedCount }) => {
       if (!tasks || tasks.length === 0) {
-        await client.pushMessage({ to: userId, messages: [{ type: 'text', text: 'タスクになりそうなメールは見つかりませんでした。' }] });
+        const msg = scannedCount === 0
+          ? 'スター付きメールが見つかりませんでした。\nGmailでメールに⭐スターを付けてから試してください。'
+          : scannedCount + '件のスター付きメールをスキャンしましたが、タスクは見つかりませんでした。';
+        await client.pushMessage({ to: userId, messages: [{ type: 'text', text: msg }] });
         return;
       }
       const confirmId = crypto.randomUUID();
