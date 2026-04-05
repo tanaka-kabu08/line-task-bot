@@ -75,8 +75,9 @@ async function scanEmails(tokens) {
     });
 
     const messages = listResponse.data.messages || [];
+    console.log('[Gmail] starred messages found: ' + messages.length);
     if (messages.length === 0) {
-      return [];
+      return { tasks: [], scannedCount: 0 };
     }
 
     const today = new Date().toISOString().split('T')[0];
@@ -109,6 +110,7 @@ async function scanEmails(tokens) {
 
         const result = await claudeService.extractTasks(combinedText, today);
 
+        console.log('[Gmail] subject: ' + subject + ', bodyLen: ' + body.length);
         if (result.tasks && result.tasks.length > 0) {
           const tasksWithSource = result.tasks.map(t => ({
             ...t,
@@ -121,7 +123,7 @@ async function scanEmails(tokens) {
       }
     }
 
-    return allTasks;
+    return { tasks: allTasks, scannedCount: messages.length };
   } catch (error) {
     console.error('Gmail scanEmails error:', error.message);
     throw error;
