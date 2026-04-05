@@ -160,7 +160,10 @@ async function handleEvent(event, app) {
     const skippedTasks = pending.tasks.filter(t => t.selected !== true);
 
     if (selectedTasks.length === 0) {
-      return reply({ type: 'text', text: 'タスクが選択されていません。番号をタップして選んでください。' });
+      await dbService.deletePendingConfirmation(userId);
+      const emailIds = pending.tasks.map(t => t.emailId).filter(Boolean);
+      if (emailIds.length > 0) await dbService.saveProcessedEmailIds(userId, emailIds);
+      return reply({ type: 'text', text: '全てスキップしました。' });
     }
 
     // スキップがある場合は確認画面を表示
