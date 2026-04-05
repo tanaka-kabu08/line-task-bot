@@ -105,7 +105,7 @@ async function scanEmails(tokens) {
           body = extractTextFromParts(detail.data.payload.parts);
         }
 
-        const bodyTruncated = body.substring(0, 1500);
+        const bodyTruncated = body.substring(0, 500);
         if (body.length < 30) {
           allTasks.push({ title: subject.substring(0, 40), dueDate: null, dueTime: null, priority: 'medium', category: 'その他', notes: null, source: subject.substring(0, 20) });
           continue;
