@@ -1,6 +1,9 @@
 const { google } = require('googleapis');
 const claudeService = require('./claudeService');
 
+/**
+ * Google OAuth2クライアントを作成
+ */
 function createOAuth2Client(tokens) {
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -11,6 +14,9 @@ function createOAuth2Client(tokens) {
   return oauth2Client;
 }
 
+/**
+ * base64url をデコードしてUTF-8文字列に変換
+ */
 function decodeBase64Url(data) {
   if (!data) return '';
   const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
@@ -18,19 +24,45 @@ function decodeBase64Url(data) {
   return Buffer.from(padded, 'base64').toString('utf-8');
 }
 
-function extractTextFromParts(parts) {
-  if (!parts) return '';
-  let text = '';
-  for (const part of parts) {
-    if (part.mimeType === 'text/plain' && part.body && part.body.data) {
-      text += decodeBase64Url(part.body.data);
-    } else if (part.parts) {
-      text += extractTextFromParts(part.parts);
-    }
-  }
-  return text;
+/**
+ * HTMLタグを除去してプレーンテキストに変換
+ */
+function stripHtml(html) {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
+/**
+ * メールパーツからテキストを再帰的に抽出（text/plain優先、なければtext/html）
+ */
+function extractTextFromParts(parts) {
+  if (!parts) return '';
+  let plainText = '';
+  let htmlText = '';
+  for (const part of parts) {
+    if (part.mimeType === 'text/plain' && part.body && part.body.data) {
+      plainText += decodeBase64Url(part.body.data);
+    } else if (part.mimeType === 'text/html' && part.body && part.body.data) {
+      htmlText += decodeBase64Url(part.body.data);
+    } else if (part.parts) {
+      const nested = extractTextFromParts(part.parts);
+      plainText += nested;
+    }
+  }
+  return plainText || stripHtml(htmlText);
+}
+
+/**
+ * スター付きメールを取得してタスクを抽出
+ */
 async function scanEmails(tokens) {
   const auth = createOAuth2Client(tokens);
   const gmail = google.gmail({ version: 'v1', auth });
@@ -62,14 +94,17 @@ async function scanEmails(tokens) {
         const subjectHeader = headers.find(h => h.name.toLowerCase() === 'subject');
         const subject = subjectHeader ? subjectHeader.value : '（件名なし）';
 
+        // 本文を抽出
         let body = '';
+        const mimeType = detail.data.payload.mimeType || '';
         if (detail.data.payload.body && detail.data.payload.body.data) {
-          body = decodeBase64Url(detail.data.payload.body.data);
+          const raw = decodeBase64Url(detail.data.payload.body.data);
+          body = mimeType.includes('html') ? stripHtml(raw) : raw;
         } else if (detail.data.payload.parts) {
           body = extractTextFromParts(detail.data.payload.parts);
         }
 
-        const bodyTruncated = body.substring(0, 1000);
+        const bodyTruncated = body.substring(0, 1500);
         const combinedText = '件名: ' + subject + '\n\n本文:\n' + bodyTruncated;
 
         const result = await claudeService.extractTasks(combinedText, today);
