@@ -140,10 +140,10 @@ async function handleEvent(event, app) {
     if (!pending) {
       return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
     }
-    // 全タスクの selected を false に初期化
-    const initializedTasks = pending.tasks.map(t => ({ ...t, selected: false }));
-    await dbService.savePendingConfirmation(pending.id, userId, initializedTasks);
-    return reply(lineService.buildSelectMessage(initializedTasks));
+    // 全件を「登録」状態（selected: true）でデフォルト初期化
+    const allSelected = pending.tasks.map(t => ({ ...t, selected: true }));
+    await dbService.savePendingConfirmation(pending.id, userId, allSelected);
+    return reply(lineService.buildSelectMessage(allSelected));
   }
 
   // 「決定」（選んで登録モードで選択済みタスクを登録）
@@ -171,15 +171,14 @@ async function handleEvent(event, app) {
       }
     }
 
-    // 選択されたタスクのemailIdのみ処理済みに記録
-    const emailIds = selectedTasks.map(t => t.emailId).filter(Boolean);
+    const emailIds = pending.tasks.map(t => t.emailId).filter(Boolean);
     if (emailIds.length > 0) await dbService.saveProcessedEmailIds(userId, emailIds);
 
     await dbService.deletePendingConfirmation(userId);
     return reply(lineService.buildResultMessage(registeredTasks));
   }
 
-  // 「N番」（タスク番号の選択/解除）
+  // 「N番」（タスク番号の選択/解除トグル）
   const numberMatch = text.match(/^(\d+)番$/);
   if (numberMatch) {
     const pending = await dbService.getPendingConfirmation(userId);
@@ -192,7 +191,7 @@ async function handleEvent(event, app) {
       return reply({ type: 'text', text: `${numberMatch[1]}番のタスクは存在しません。` });
     }
 
-    // selected フラグをトグル
+    // selected フラグをトグル（[登録] ↔ [スキップ]）
     const updatedTasks = pending.tasks.map((t, i) => {
       if (i === index) {
         return { ...t, selected: !t.selected };
@@ -284,6 +283,8 @@ async function handleEvent(event, app) {
   // タスクが抽出された場合 → 確認メッセージを送る
   if (result.tasks && result.tasks.length > 0) {
     if (!tokens) {
+      // 認証が必要な場合でも確認メッセージは送る（登録時にエラーになる）
+      // ここでは認証要求メッセージを返す
       return reply(buildAuthRequiredMessage(userId));
     }
 
