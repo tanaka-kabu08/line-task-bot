@@ -10,7 +10,7 @@ function priorityIcon(p) { return { high:'🔴', medium:'🟡', low:'🟢' }[p] 
 function priorityLabel(p) { return { high:'高', medium:'中', low:'低' }[p] || '中'; }
 
 function buildConfirmMessage(tasks) {
-  const tasksText = tasks.map((t,i) => `${i+1}. 📌 ${t.title}（${t.dueDate ? formatDateJP(t.dueDate) : '期限なし'}・${priorityIcon(t.priority)}${priorityLabel(t.priority)}）`).join('\n');
+  const tasksText = tasks.map((t,i) => `${i+1}. 📌 ${t.title}（${t.dueDate ? formatDateJP(t.dueDate) : '期限なし'}）`).join('\n');
   return {
     type: 'text',
     text: `以下のタスクを登録してよいですか？\n\n${tasksText}\n`,
