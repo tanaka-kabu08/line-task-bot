@@ -5,8 +5,10 @@ const taskService = require('../services/taskService');
 const calendarService = require('../services/calendarService');
 const { requireAuth } = require('../middleware/auth');
 
+// GET /api/tasks - タスク一覧取得
 router.get('/tasks', requireAuth, async (req, res) => {
   try {
+    // Web管理画面では全タスクを表示（line_user_id でフィルタしない）
     const tasks = await dbService.getAllTasks(null);
     res.json({ tasks });
   } catch (error) {
@@ -15,11 +17,25 @@ router.get('/tasks', requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/tasks/add - タスクを手動追加
 router.post('/tasks/add', requireAuth, async (req, res) => {
   try {
     const { title, dueDate, dueTime, priority, category, notes } = req.body;
-    if (!title) return res.status(400).json({ error: 'タイトルは必須です' });
-    const taskData = { title, dueDate: dueDate||null, dueTime: dueTime||null, priority: priority||'medium', category: category||'その他', notes: notes||null, source: 'Web手動追加' };
+
+    if (!title) {
+      return res.status(400).json({ error: 'タイトルは必須です' });
+    }
+
+    const taskData = {
+      title,
+      dueDate: dueDate || null,
+      dueTime: dueTime || null,
+      priority: priority || 'medium',
+      category: category || 'その他',
+      notes: notes || null,
+      source: 'Web手動追加'
+    };
+
     const tokens = req.session.googleTokens;
     const registered = await taskService.registerTask(taskData, tokens, null);
     res.json({ task: registered });
@@ -29,15 +45,37 @@ router.post('/tasks/add', requireAuth, async (req, res) => {
   }
 });
 
+// PATCH /api/tasks/:id/complete - タスクを完了にする
 router.patch('/tasks/:id/complete', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const tasks = await dbService.getAllTasks(null);
     const task = tasks.find(t => t.id === id);
-    if (!task) return res.status(404).json({ error: 'タスクが見つかりません' });
+
+    if (!task) {
+      return res.status(404).json({ error: 'タスクが見つかりません' });
+    }
+
     const tokens = req.session.googleTokens;
-    if (task.google_task_id && tokens) { try { await taskService.completeGoogleTask(task.google_task_id, tokens); } catch(e) {} }
-    if (task.google_event_id && tokens) { try { await calendarService.markEventDone(task.google_event_id, tokens); } catch(e) {} }
+
+    // Google Tasks を完了にする
+    if (task.google_task_id && tokens) {
+      try {
+        await taskService.completeGoogleTask(task.google_task_id, tokens);
+      } catch (e) {
+        console.error('Google Tasks complete error:', e.message);
+      }
+    }
+
+    // Google Calendar のイベントに完了マークを付ける
+    if (task.google_event_id && tokens) {
+      try {
+        await calendarService.markEventDone(task.google_event_id, tokens);
+      } catch (e) {
+        console.error('Calendar mark done error:', e.message);
+      }
+    }
+
     await dbService.updateTaskStatus(id, 'completed');
     res.json({ success: true });
   } catch (error) {
@@ -46,15 +84,37 @@ router.patch('/tasks/:id/complete', requireAuth, async (req, res) => {
   }
 });
 
+// DELETE /api/tasks/:id - タスクを削除
 router.delete('/tasks/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const tasks = await dbService.getAllTasks(null);
     const task = tasks.find(t => t.id === id);
-    if (!task) return res.status(404).json({ error: 'タスクが見つかりません' });
+
+    if (!task) {
+      return res.status(404).json({ error: 'タスクが見つかりません' });
+    }
+
     const tokens = req.session.googleTokens;
-    if (task.google_task_id && tokens) { try { await taskService.deleteGoogleTask(task.google_task_id, tokens); } catch(e) {} }
-    if (task.google_event_id && tokens) { try { await calendarService.deleteEvent(task.google_event_id, tokens); } catch(e) {} }
+
+    // Google Tasks から削除
+    if (task.google_task_id && tokens) {
+      try {
+        await taskService.deleteGoogleTask(task.google_task_id, tokens);
+      } catch (e) {
+        console.error('Google Tasks delete error:', e.message);
+      }
+    }
+
+    // Google Calendar から削除
+    if (task.google_event_id && tokens) {
+      try {
+        await calendarService.deleteEvent(task.google_event_id, tokens);
+      } catch (e) {
+        console.error('Calendar delete event error:', e.message);
+      }
+    }
+
     await dbService.deleteTask(id);
     res.json({ success: true });
   } catch (error) {
@@ -63,6 +123,7 @@ router.delete('/tasks/:id', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/calendar/events - 今週のカレンダー予定取得
 router.get('/calendar/events', requireAuth, async (req, res) => {
   try {
     const tokens = req.session.googleTokens;
