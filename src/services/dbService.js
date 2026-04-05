@@ -136,9 +136,9 @@ initDB().catch(err => console.error('DB init error:', err));
 
 const now = () => new Date().toISOString();
 
-async function savePendingConfirmation(id, lineUserId, tasks) {
+async function savePendingConfirmation(id, lineUserId, tasks, page = 0) {
   const sql = upsertSQL('pending_confirmations', 'id', ['id', 'line_user_id', 'tasks_json', 'created_at']);
-  await run(sql, [id, lineUserId, JSON.stringify(tasks), now()]);
+  await run(sql, [id, lineUserId, JSON.stringify({ tasks, page }), now()]);
 }
 
 async function getPendingConfirmation(lineUserId) {
@@ -147,10 +147,14 @@ async function getPendingConfirmation(lineUserId) {
     [lineUserId]
   );
   if (!row) return null;
+  const parsed = JSON.parse(row.tasks_json);
+  const tasks = Array.isArray(parsed) ? parsed : parsed.tasks;
+  const page = Array.isArray(parsed) ? 0 : (parsed.page || 0);
   return {
     id: row.id,
     lineUserId: row.line_user_id,
-    tasks: JSON.parse(row.tasks_json),
+    tasks,
+    page,
     createdAt: row.created_at
   };
 }
