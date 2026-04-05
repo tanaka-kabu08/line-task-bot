@@ -106,17 +106,18 @@ async function scanEmails(tokens) {
         }
 
         const bodyTruncated = body.substring(0, 1500);
-        const combinedText = '件名: ' + subject + '\n\n本文:\n' + bodyTruncated;
-
+        if (body.length < 30) {
+          allTasks.push({ title: subject.substring(0, 40), dueDate: null, dueTime: null, priority: 'medium', category: 'その他', notes: null, source: subject.substring(0, 20) });
+          continue;
+        }
+        const sep = '\n';
+        const combinedText = '件名: ' + subject + sep + sep + '本文:' + sep + bodyTruncated;
         const result = await claudeService.extractTasks(combinedText, today);
-
-        console.log('[Gmail] subject: ' + subject + ', bodyLen: ' + body.length);
         if (result.tasks && result.tasks.length > 0) {
-          const tasksWithSource = result.tasks.map(t => ({
-            ...t,
-            source: t.source || subject.substring(0, 20)
-          }));
+          const tasksWithSource = result.tasks.map(t => ({ ...t, source: t.source || subject.substring(0, 20) }));
           allTasks.push(...tasksWithSource);
+        } else {
+          allTasks.push({ title: subject.substring(0, 40), dueDate: null, dueTime: null, priority: 'medium', category: 'その他', notes: null, source: subject.substring(0, 20) });
         }
       } catch (msgError) {
         console.error('Error processing message ' + msg.id + ':', msgError.message);
