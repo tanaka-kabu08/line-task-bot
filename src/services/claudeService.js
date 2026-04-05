@@ -4,6 +4,12 @@ function getClient() {
   return new Groq({ apiKey: process.env.GROQ_API_KEY });
 }
 
+/**
+ * テキストからタスクを抽出する
+ * @param {string} text - 解析対象テキスト
+ * @param {string} today - 今日の日付（YYYY-MM-DD）
+ * @returns {{ tasks: Array, command: string|null }}
+ */
 async function extractTasks(text, today) {
   const systemPrompt = `あなたはメールからタスク・予定を抽出するアシスタントです。
 
@@ -18,6 +24,7 @@ async function extractTasks(text, today) {
 - その他 → 件名から具体的なタイトルをつける
 
 日付は「〇月〇日」と書かれている通りに使う（ずらさない）。
+タイトルはURLやドメイン名（〇〇.co.jpなど）を含めず、具体的な内容にする。
 タイトルは「予約確認」「お知らせ」などの汎用名は避け、具体的な内容にする。
 
 {
@@ -40,9 +47,15 @@ async function extractTasks(text, today) {
 - medium: 期限が1週間以内、通常の依頼
 - low: 期限が遠い、「いつか」「余裕があれば」
 
-また、以下のコマンドを検出した場合はcommandフィールドに設定:
+カテゴリの判定基準:
+- 買い物: 食品・日用品・購入に関するもの
+- 仕事: ビジネス・職場関連
+- 家事: 掃除・洗濯・料理・クリーニングなど
+- その他: 上記に当てはまらないもの
+
+また、以下のコマンドを検出した場合はcommandフィールドに設定、tasksは空配列:
 - 「タスク一覧」「未完了」「やること」→ { "tasks": [], "command": "list" }
-- 「○○完了」「○○終わった」→ { "tasks": [{"title": "○○"}], "command": "complete" }
+- 「○○完了」「○○終わった」「○○やった」→ { "tasks": [{"title": "○○"}], "command": "complete" }
 - 「○○削除」「○○取り消し」→ { "tasks": [{"title": "○○"}], "command": "delete" }
 
 今日の日付: ${today}`;
@@ -51,14 +64,24 @@ async function extractTasks(text, today) {
     const response = await getClient().chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       max_tokens: 1024,
-      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: text }]
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: text }
+      ]
     });
+
     const responseText = response.choices[0].message.content;
+
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return { tasks: [], command: null };
+    if (!jsonMatch) {
+      return { tasks: [], command: null };
+    }
+
     const parsed = JSON.parse(jsonMatch[0]);
-    const parsed = JSON.parse(jsonMatch[0]);
-    const stripUrls = str => str ? str.replace(/https?:\/\/\S+/g, '').replace(/\s{2,}/g, ' ').trim() : str;
+    const stripUrls = str => str ? str
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/\b[\w.-]+\.(co\.jp|com|jp|net|org|io|app|html?)\b\S*/g, '')
+      .replace(/\s{2,}/g, ' ').trim() : str;
     const tasks = (parsed.tasks || []).map(t => ({
       ...t,
       title: stripUrls(t.title),
@@ -66,6 +89,10 @@ async function extractTasks(text, today) {
       source: stripUrls(t.source)
     }));
     return { tasks, command: parsed.command || null };
+  } catch (error) {
+    console.error('Groq API error:', error.message);
+    return { tasks: [], command: null };
+  }
 }
 
 module.exports = { extractTasks };
