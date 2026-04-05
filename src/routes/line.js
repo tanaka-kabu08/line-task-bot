@@ -50,7 +50,7 @@ async function handleEvent(event, app) {
   const text = event.message.text.trim();
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' }); // YYYY-MM-DD
 
-  // LINE ユーザーに紐〥く Google トークンをメモリ→DBの順で取得
+  // LINE ユーザーに紐づく Google トークンをメモリ→DBの順で取得
   const googleTokens = app.locals.googleTokens || {};
   let tokens = googleTokens[userId] || null;
   if (!tokens) {
@@ -86,8 +86,8 @@ async function handleEvent(event, app) {
     gmailService.scanEmails(tokens, processedIds).then(async ({ tasks, scannedCount }) => {
       if (!tasks || tasks.length === 0) {
         const msg = scannedCount === 0
-          ? 'スター付きメールが見つかりませんでした。\nGmailでメールて⭐スターを付けてから試してください。'
-          : `${scannedCount}件のスター付きメールをスキャンしましたが�タスクは見つかりませんでした。`;
+          ? 'スター付きメールが見つかりません、\nGmailでメールに⭐スターを付けてから試してください。'
+          : `${scannedCount}件のスター付きメールをスキャンしましたが、タスクは見つかりませんでした。`;
         await client.pushMessage({ to: userId, messages: [{ type: 'text', text: msg }] });
         return;
       }
@@ -140,10 +140,10 @@ async function handleEvent(event, app) {
     if (!pending) {
       return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
     }
-    // 最初の12件のみ「登録」状態で初期化（Quick Replyの上限）�それ以降はスキップ
-    const allSelected = pending.tasks.map((t, i) => ({ ...t, selected: i < 12 }));
-    await dbService.savePendingConfirmation(pending.id, userId, allSelected);
-    return reply(lineService.buildSelectMessage(allSelected));
+    // 全件「登録」確態で初期化
+    const allSelected = pending.tasks.map(t => ({ ...t, selected: true }));
+    await dbService.savePendingConfirmation(pending.id, userId, allSelected, 0);
+    return reply(lineService.buildSelectMessage(allSelected, 0));
   }
 
   // 「決定」→ スキップがあれば確認画面、なければ即登録
@@ -193,10 +193,32 @@ async function handleEvent(event, app) {
     if (!pending) {
       return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
     }
-    return reply(lineService.buildSelectMessage(pending.tasks));
+    return reply(lineService.buildSelectMessage(pending.tasks, pending.page || 0));
   }
 
-  // 「N番ڑ�」（タスク番号の選択/解除）
+  // 「次へ」→ 次のページ
+  if (text === '次へ') {
+    const pending = await dbService.getPendingConfirmation(userId);
+    if (!pending) {
+      return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
+    }
+    const newPage = (pending.page || 0) + 1;
+    await dbService.savePendingConfirmation(pending.id, userId, pending.tasks, newPage);
+    return reply(lineService.buildSelectMessage(pending.tasks, newPage));
+  }
+
+  // 「前へ」→ 前のページ
+  if (text === '前へ') {
+    const pending = await dbService.getPendingConfirmation(userId);
+    if (!pending) {
+      return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
+    }
+    const newPage = Math.max(0, (pending.page || 0) - 1);
+    await dbService.savePendingConfirmation(pending.id, userId, pending.tasks, newPage);
+    return reply(lineService.buildSelectMessage(pending.tasks, newPage));
+  }
+
+  // 「N番」（タスク番号の選択/解除）
   const numberMatch = text.match(/^(\d+)番$/);
   if (numberMatch) {
     const pending = await dbService.getPendingConfirmation(userId);
@@ -206,7 +228,7 @@ async function handleEvent(event, app) {
 
     const index = parseInt(numberMatch[1], 10) - 1;
     if (index < 0 || index >= pending.tasks.length) {
-      return reply({ type: 'text', text: `${numberMatch[1]}策のタスクは存在しません。` });
+      return reply({ type: 'text', text: `${numberMatch[1]}番のタスクは存在しません。` });
     }
 
     // selected フラグをトグル
@@ -217,8 +239,8 @@ async function handleEvent(event, app) {
       return t;
     });
 
-    await dbService.savePendingConfirmation(pending.id, userId, updatedTasks);
-    return reply(lineService.buildSelectMessage(updatedTasks));
+    await dbService.savePendingConfirmation(pending.id, userId, updatedTasks, pending.page || 0);
+    return reply(lineService.buildSelectMessage(updatedTasks, pending.page || 0));
   }
 
   // --- Claude でタスク解析 ---
