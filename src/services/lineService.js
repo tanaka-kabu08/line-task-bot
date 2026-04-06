@@ -100,7 +100,7 @@ function buildSelectMessage(tasks, page = 0) {
       action: {
         type: 'message',
         label: `${i + 1}番 ${t.title.length > 9 ? t.title.substring(0, 9) + '…' : t.title}`,
-  2     text: `${i + 1}番`
+        text: `${i + 1}番`
       }
     });
   });
@@ -137,7 +137,7 @@ function buildConfirmSelectMessage(tasks) {
   const selected = tasks.filter(t => t.selected === true);
   const skipped = tasks.filter(t => t.selected !== true);
   const lines = [
-    `✅ 登録: ${selected.length}䛶 / ⏭️ スキップ: ${skipped.length}件\n`,
+    `✅ 登録: ${selected.length}件 / ⏭️ スキップ: ${skipped.length}件\n`,
     ...selected.map(t => `✅ ${stripDomains(t.title)}`),
     ...skipped.map(t => `⏭️ ${stripDomains(t.title)}`)
   ].join('\n');
@@ -160,7 +160,7 @@ function buildConfirmSelectMessage(tasks) {
 function buildResultMessage(registeredTasks) {
   const taskLines = registeredTasks.map((t, i) => {
     const dateStr = t.dueDate ? formatDateJP(t.dueDate) : '期限なし';
-    const calendarNote = t.googleEventId ? ' → カレンダc��にも追加' : '';
+    const calendarNote = t.googleEventId ? ' → カレンダーにも追加' : '';
     return `${i + 1}. ${t.title}（${dateStr}）${calendarNote}`;
   }).join('\n');
 
