@@ -62,7 +62,7 @@ async function addEvent(taskData, tokens) {
   let start, end;
 
   if (taskData.dueDate && taskData.dueTime) {
-    // dateTime形式（時刷あり）
+    // dateTime形式（時刻あり）
     const startDateTime = `${taskData.dueDate}T${taskData.dueTime}:00+09:00`;
     const [h, m] = taskData.dueTime.split(':').map(Number);
     const endH = String(h + 1).padStart(2, '0');
@@ -90,8 +90,8 @@ async function addEvent(taskData, tokens) {
     reminders: {
       useDefault: false,
       overrides: [
-        { method: 'popup', minutes: 60 },  2// 1時間前
-        { method: 'popup', minutes: 1440 }  // 1日前
+        { method: 'popup', minutes: 60 },  // 1時間前
+        { method: 'popup', minutes: 1440 } // 1日前
       ]
     }
   };
@@ -99,7 +99,7 @@ async function addEvent(taskData, tokens) {
   try {
     const response = await calendar.events.insert({
       calendarId: 'primary',
-      resource: event
+      requestBody: event
     });
     return response.data.id;
   } catch (error) {
@@ -128,7 +128,7 @@ async function markEventDone(eventId, tokens) {
     await calendar.events.update({
       calendarId: 'primary',
       eventId,
-      resource: event
+      requestBody: event
     });
   } catch (error) {
     console.error('Calendar markEventDone error:', error.message);
