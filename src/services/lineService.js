@@ -100,7 +100,7 @@ function buildSelectMessage(tasks, page = 0) {
       action: {
         type: 'message',
         label: `${i + 1}番 ${t.title.length > 9 ? t.title.substring(0, 9) + '…' : t.title}`,
-        text: `${i + 1}番`
+  2     text: `${i + 1}番`
       }
     });
   });
@@ -137,7 +137,7 @@ function buildConfirmSelectMessage(tasks) {
   const selected = tasks.filter(t => t.selected === true);
   const skipped = tasks.filter(t => t.selected !== true);
   const lines = [
-    `✅ 登録: ${selected.length}件 / ⏭️ スキップ: ${skipped.length}件\n`,
+    `✅ 登録: ${selected.length}䛶 / ⏭️ スキップ: ${skipped.length}件\n`,
     ...selected.map(t => `✅ ${stripDomains(t.title)}`),
     ...skipped.map(t => `⏭️ ${stripDomains(t.title)}`)
   ].join('\n');
@@ -160,7 +160,7 @@ function buildConfirmSelectMessage(tasks) {
 function buildResultMessage(registeredTasks) {
   const taskLines = registeredTasks.map((t, i) => {
     const dateStr = t.dueDate ? formatDateJP(t.dueDate) : '期限なし';
-    const calendarNote = t.googleEventId ? ' → カレンダーにも追加' : '';
+    const calendarNote = t.googleEventId ? ' → カレンダc��にも追加' : '';
     return `${i + 1}. ${t.title}（${dateStr}）${calendarNote}`;
   }).join('\n');
 
@@ -171,7 +171,7 @@ function buildResultMessage(registeredTasks) {
 }
 
 /**
- * タスク一覧メッセージを作成
+ * タスク一覧メッセージを作成（日付あり/なしでセクション分け）
  */
 function formatTaskList(tasks) {
   if (!tasks || tasks.length === 0) {
@@ -181,16 +181,32 @@ function formatTaskList(tasks) {
     };
   }
 
-  const taskLines = tasks.map(t => {
-    const icon = priorityIcon(t.priority);
-    const dateStr = t.due_date ? formatDateJP(t.due_date) : '期限なし';
-    return `${icon} ${t.title} - ${dateStr}`;
-  }).join('\n');
+  const withDate = tasks.filter(t => t.due_date);
+  const withoutDate = tasks.filter(t => !t.due_date);
 
-  return {
-    type: 'text',
-    text: `📋 タスク一覧\n\n${taskLines}\n\n「○○完了」で完了、「○○削除」で削除できます。`
-  };
+  let text = '📋 タスク一覧\n';
+
+  if (withDate.length > 0) {
+    text += '\n📅 予定・期限あり\n';
+    text += withDate.map(t => {
+      const icon = priorityIcon(t.priority);
+      const dateStr = formatDateJP(t.due_date);
+      const timeStr = t.due_time ? ` ${t.due_time}` : '';
+      return `${icon} ${t.title} - ${dateStr}${timeStr}`;
+    }).join('\n');
+  }
+
+  if (withoutDate.length > 0) {
+    text += '\n\n🛒 いつでもやること\n';
+    text += withoutDate.map(t => {
+      const icon = priorityIcon(t.priority);
+      return `${icon} ${t.title}`;
+    }).join('\n');
+  }
+
+  text += '\n\n「○○完了」で完了、「○○削除」で削除できます。';
+
+  return { type: 'text', text };
 }
 
 module.exports = {
