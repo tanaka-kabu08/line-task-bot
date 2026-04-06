@@ -14,7 +14,7 @@ function createOAuth2Client(tokens) {
 }
 
 /**
- * 今週（月曜）のカレンダーイベンよEventsを取得
+ * 今週（月曜〜日曜）のカレンダーイベントを取得
  */
 async function getThisWeekEvents(tokens) {
   const auth = createOAuth2Client(tokens);
@@ -62,7 +62,7 @@ async function addEvent(taskData, tokens) {
   let start, end;
 
   if (taskData.dueDate && taskData.dueTime) {
-    // dateTime形式（時刻あり）
+    // dateTime形式（時刷あり）
     const startDateTime = `${taskData.dueDate}T${taskData.dueTime}:00+09:00`;
     const [h, m] = taskData.dueTime.split(':').map(Number);
     const endH = String(h + 1).padStart(2, '0');
@@ -90,7 +90,7 @@ async function addEvent(taskData, tokens) {
     reminders: {
       useDefault: false,
       overrides: [
-        { method: 'popup', minutes: 60 },   // 1時間前
+        { method: 'popup', minutes: 60 },  2// 1時間前
         { method: 'popup', minutes: 1440 }  // 1日前
       ]
     }
