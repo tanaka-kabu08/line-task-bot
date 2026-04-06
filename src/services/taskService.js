@@ -28,7 +28,7 @@ async function getOrCreateTaskList(tasksApi, listName) {
   const found = lists.find(l => l.title === listName);
   if (found) return found.id;
 
-  const created = await tasksApi.tasklists.insert({ resource: { title: listName } });
+  const created = await tasksApi.tasklists.insert({ requestBody: { title: listName } });
   return created.data.id;
 }
 
@@ -55,7 +55,7 @@ async function addGoogleTask(taskData, tokens) {
   try {
     const response = await tasksApi.tasks.insert({
       tasklist: tasklistId,
-      resource: task
+      requestBody: task
     });
     return response.data.id;
   } catch (error) {
@@ -93,7 +93,7 @@ async function completeGoogleTask(taskId, tokens) {
     await tasksApi.tasks.patch({
       tasklist: tasklistId,
       task: taskId,
-      resource: { status: 'completed' }
+      requestBody: { status: 'completed' }
     });
   } catch (error) {
     console.error('Google Tasks completeGoogleTask error:', error.message);
@@ -121,7 +121,7 @@ async function deleteGoogleTask(taskId, tokens) {
 }
 
 /**
- * タスクをGoogle Taskr・Google Calendar・DBに一括登録するメイン関数
+ * タスクをGoogle Tasks・Google Calendar・DBに一括登録するメイン関数
  * @param {Object} taskData - タスクデータ
  * @param {Object} tokens - Google OAuthトークン
  * @param {string} lineUserId - LINE ユーザーID（任意）
