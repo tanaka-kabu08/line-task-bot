@@ -153,7 +153,7 @@ async function handleEvent(event, app) {
     }
     const pending = await dbService.getPendingConfirmation(userId);
     if (!pending) {
-      return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
+   2  return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
     }
 
     const selectedTasks = pending.tasks.filter(t => t.selected === true);
