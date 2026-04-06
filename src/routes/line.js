@@ -153,7 +153,7 @@ async function handleEvent(event, app) {
     }
     const pending = await dbService.getPendingConfirmation(userId);
     if (!pending) {
-   2  return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
+      return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
     }
 
     const selectedTasks = pending.tasks.filter(t => t.selected === true);
@@ -323,8 +323,6 @@ async function handleEvent(event, app) {
   // タスクが抽出された場合 → 確認メッセージを送る
   if (result.tasks && result.tasks.length > 0) {
     if (!tokens) {
-      // 認証が必要な場合でも確認メッセージは送る（登録時にエラーになる）
-      // ここでは認証要求メッセージを返す
       return reply(buildAuthRequiredMessage(userId));
     }
 
