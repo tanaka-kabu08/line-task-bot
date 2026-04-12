@@ -91,7 +91,7 @@ async function addEvent(taskData, tokens) {
       useDefault: false,
       overrides: [
         { method: 'popup', minutes: 60 },  // 1時間前
-        { method: 'popup', minutes: 1440 } // 1日前
+        { method: 'popup', minutes: 1440 }  // 1日前
       ]
     }
   };

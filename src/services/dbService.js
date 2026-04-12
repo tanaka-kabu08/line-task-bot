@@ -242,6 +242,10 @@ async function getUserTokens(lineUserId) {
   try { return JSON.parse(row.tokens_json); } catch { return null; }
 }
 
+async function deleteUserTokens(lineUserId) {
+  await run('DELETE FROM user_tokens WHERE line_user_id = ?', [lineUserId]);
+}
+
 module.exports = {
   savePendingConfirmation,
   getPendingConfirmation,
@@ -255,5 +259,6 @@ module.exports = {
   saveProcessedEmailIds,
   getProcessedEmailIds,
   saveUserTokens,
-  getUserTokens
+  getUserTokens,
+  deleteUserTokens
 };

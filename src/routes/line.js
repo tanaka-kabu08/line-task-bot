@@ -96,7 +96,14 @@ async function handleEvent(event, app) {
       await client.pushMessage({ to: userId, messages: [lineService.buildConfirmMessage(tasks)] });
     }).catch(async (err) => {
       console.error('Gmail scan error:', err.message);
-      await client.pushMessage({ to: userId, messages: [{ type: 'text', text: 'エラー: ' + err.message }] });
+      if (err.message && err.message.includes('invalid_grant')) {
+        // トークン失効 → DBとメモリから削除して再認証を促す
+        await dbService.deleteUserTokens(userId);
+        if (app.locals.googleTokens) delete app.locals.googleTokens[userId];
+        await client.pushMessage({ to: userId, messages: [buildAuthRequiredMessage(userId)] });
+      } else {
+        await client.pushMessage({ to: userId, messages: [{ type: 'text', text: 'エラー: ' + err.message }] });
+      }
     });
     return;
   }
