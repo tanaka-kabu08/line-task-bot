@@ -8,8 +8,8 @@ const { requireAuth } = require('../middleware/auth');
 // GET /api/tasks - タスク一覧取得
 router.get('/tasks', requireAuth, async (req, res) => {
   try {
-    // Web管理画面では全タスクを表示（line_user_id でフィルタしない）
-    const tasks = await dbService.getAllTasks(null);
+    const lineUserId = req.session.lineUserId || null;
+    const tasks = await dbService.getAllTasks(lineUserId);
     res.json({ tasks });
   } catch (error) {
     console.error('Get tasks error:', error.message);
@@ -49,7 +49,8 @@ router.post('/tasks/add', requireAuth, async (req, res) => {
 router.patch('/tasks/:id/complete', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const tasks = await dbService.getAllTasks(null);
+    const lineUserId = req.session.lineUserId || null;
+    const tasks = await dbService.getAllTasks(lineUserId);
     const task = tasks.find(t => t.id === id);
 
     if (!task) {
@@ -88,7 +89,8 @@ router.patch('/tasks/:id/complete', requireAuth, async (req, res) => {
 router.delete('/tasks/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const tasks = await dbService.getAllTasks(null);
+    const lineUserId = req.session.lineUserId || null;
+    const tasks = await dbService.getAllTasks(lineUserId);
     const task = tasks.find(t => t.id === id);
 
     if (!task) {

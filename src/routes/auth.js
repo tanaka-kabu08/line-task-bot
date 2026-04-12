@@ -69,6 +69,7 @@ router.get('/callback', async (req, res) => {
           }
           req.app.locals.googleTokens[lineUserId] = tokens;
           dbService.saveUserTokens(lineUserId, tokens);
+          req.session.lineUserId = lineUserId; // Web画面のフィルタ用
           console.log('Google tokens linked to LINE user: ' + lineUserId);
         }
       } catch (e) {
