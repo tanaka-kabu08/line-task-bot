@@ -76,6 +76,15 @@ async function handleEvent(event, app) {
 
   // --- コマンド分岐 ---
 
+  // 「メールリセット」→ 処理済み記録をクリアして再スキャン可能にする
+  if (text === 'メールリセット') {
+    await dbService.clearProcessedEmailIds(userId);
+    return reply({
+      type: 'text',
+      text: '✅ 処理済みメールの記録をリセットしました。\n「メール確認」を送るともう一度スキャンできます。'
+    });
+  }
+
   // 「メール確認」
   if (text === 'メール確認') {
     if (!tokens) {

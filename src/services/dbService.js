@@ -231,6 +231,10 @@ async function getProcessedEmailIds(lineUserId) {
   return new Set(rows.map(r => r.email_id));
 }
 
+async function clearProcessedEmailIds(lineUserId) {
+  await run('DELETE FROM processed_emails WHERE line_user_id = ?', [lineUserId]);
+}
+
 async function saveUserTokens(lineUserId, tokens) {
   const sql = upsertSQL('user_tokens', 'line_user_id', ['line_user_id', 'tokens_json', 'updated_at']);
   await run(sql, [lineUserId, JSON.stringify(tokens), now()]);
@@ -258,6 +262,7 @@ module.exports = {
   findTaskByTitle,
   saveProcessedEmailIds,
   getProcessedEmailIds,
+  clearProcessedEmailIds,
   saveUserTokens,
   getUserTokens,
   deleteUserTokens
