@@ -9,6 +9,9 @@ const { requireAuth } = require('../middleware/auth');
 router.get('/tasks', requireAuth, async (req, res) => {
   try {
     const lineUserId = req.session.lineUserId || null;
+    if (!lineUserId) {
+      return res.json({ tasks: [] }); // LINE未連携の場合は空を返す
+    }
     const tasks = await dbService.getAllTasks(lineUserId);
     res.json({ tasks });
   } catch (error) {
@@ -50,6 +53,7 @@ router.patch('/tasks/:id/complete', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const lineUserId = req.session.lineUserId || null;
+    if (!lineUserId) return res.status(403).json({ error: 'LINE連携が必要です' });
     const tasks = await dbService.getAllTasks(lineUserId);
     const task = tasks.find(t => t.id === id);
 
@@ -90,6 +94,7 @@ router.delete('/tasks/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const lineUserId = req.session.lineUserId || null;
+    if (!lineUserId) return res.status(403).json({ error: 'LINE連携が必要です' });
     const tasks = await dbService.getAllTasks(lineUserId);
     const task = tasks.find(t => t.id === id);
 
