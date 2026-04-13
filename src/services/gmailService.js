@@ -110,7 +110,7 @@ async function scanEmails(tokens, processedIds = new Set()) {
           body = extractTextFromParts(detail.data.payload.parts);
         }
 
-        const bodyTruncated = body.substring(0, 1500);
+        const bodyTruncated = body.substring(0, 3000);
         console.log(`[Gmail] subject: "${subject}", bodyLen: ${body.length}`);
 
         // 本文が短すぎる場合は件名だけでタスク作成
