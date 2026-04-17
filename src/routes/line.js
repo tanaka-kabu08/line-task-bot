@@ -74,6 +74,14 @@ async function handleEvent(event, app) {
     });
   }
 
+  /**
+   * replyTokenに依存しないプッシュ送信（サーバー起動遅延でreplyToken期限切れの場合に使用）
+   */
+  async function push(messages) {
+    const messageArray = Array.isArray(messages) ? messages : [messages];
+    await client.pushMessage({ to: userId, messages: messageArray });
+  }
+
   // --- コマンド分岐 ---
 
   // 「メールリセット」→ 処理済み記録をクリアして再スキャン可能にする
@@ -88,7 +96,7 @@ async function handleEvent(event, app) {
   // 「メール確認」
   if (text === 'メール確認') {
     if (!tokens) {
-      return reply(buildAuthRequiredMessage(userId));
+      await push(buildAuthRequiredMessage(userId)); return;
     }
     await reply({ type: 'text', text: 'スター付きメールをスキャン中です。少々お待ちください...' });
     const processedIds = await dbService.getProcessedEmailIds(userId);
@@ -120,7 +128,7 @@ async function handleEvent(event, app) {
   // 「全て登録」
   if (text === '全て登録') {
     if (!tokens) {
-      return reply(buildAuthRequiredMessage(userId));
+      await push(buildAuthRequiredMessage(userId)); return;
     }
     const pending = await dbService.getPendingConfirmation(userId);
     if (!pending) {
@@ -138,7 +146,7 @@ async function handleEvent(event, app) {
           await dbService.deleteUserTokens(userId);
           if (app.locals.googleTokens) delete app.locals.googleTokens[userId];
           await dbService.deletePendingConfirmation(userId);
-          return reply(buildAuthRequiredMessage(userId));
+          await push(buildAuthRequiredMessage(userId)); return;
         }
       }
     }
@@ -171,7 +179,7 @@ async function handleEvent(event, app) {
   // 「決定」→ スキップがあれば確認画面、なければ即登録
   if (text === '決定') {
     if (!tokens) {
-      return reply(buildAuthRequiredMessage(userId));
+      await push(buildAuthRequiredMessage(userId)); return;
     }
     const pending = await dbService.getPendingConfirmation(userId);
     if (!pending) {
@@ -198,7 +206,7 @@ async function handleEvent(event, app) {
     if (result1 && result1.invalidGrant) {
       if (app.locals.googleTokens) delete app.locals.googleTokens[userId];
       await dbService.deletePendingConfirmation(userId);
-      return reply(buildAuthRequiredMessage(userId));
+      await push(buildAuthRequiredMessage(userId)); return;
     }
     return reply(result1);
   }
@@ -206,7 +214,7 @@ async function handleEvent(event, app) {
   // 「登録確定」（確認画面からの最終確定）
   if (text === '登録確定') {
     if (!tokens) {
-      return reply(buildAuthRequiredMessage(userId));
+      await push(buildAuthRequiredMessage(userId)); return;
     }
     const pending = await dbService.getPendingConfirmation(userId);
     if (!pending) {
@@ -216,7 +224,7 @@ async function handleEvent(event, app) {
     if (result2 && result2.invalidGrant) {
       if (app.locals.googleTokens) delete app.locals.googleTokens[userId];
       await dbService.deletePendingConfirmation(userId);
-      return reply(buildAuthRequiredMessage(userId));
+      await push(buildAuthRequiredMessage(userId)); return;
     }
     return reply(result2);
   }
@@ -279,7 +287,7 @@ async function handleEvent(event, app) {
 
   // 未認証ユーザーは Claude 呼び出しをスキップして認証を促す
   if (!tokens) {
-    return reply(buildAuthRequiredMessage(userId));
+    await push(buildAuthRequiredMessage(userId)); return;
   }
 
   // --- Claude でタスク解析 ---
@@ -362,7 +370,7 @@ async function handleEvent(event, app) {
   // タスクが抽出された場合 → 確認メッセージを送る
   if (result.tasks && result.tasks.length > 0) {
     if (!tokens) {
-      return reply(buildAuthRequiredMessage(userId));
+      await push(buildAuthRequiredMessage(userId)); return;
     }
 
     const confirmId = crypto.randomUUID();
@@ -373,7 +381,7 @@ async function handleEvent(event, app) {
   // タスクが見つからなかった場合 → 短いテキストはそのままタスクとして扱う
   if (text.length <= 30 && !text.includes('\n')) {
     if (!tokens) {
-      return reply(buildAuthRequiredMessage(userId));
+      await push(buildAuthRequiredMessage(userId)); return;
     }
     const fallbackTask = [{
       title: text,
