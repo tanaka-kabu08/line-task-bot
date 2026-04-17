@@ -259,6 +259,11 @@ async function handleEvent(event, app) {
     return reply(lineService.buildSelectMessage(updatedTasks, pending.page || 0));
   }
 
+  // 未認証ユーザーは Claude 呼び出しをスキップして認証を促す
+  if (!tokens) {
+    return reply(buildAuthRequiredMessage(userId));
+  }
+
   // --- Claude でタスク解析 ---
   const result = await claudeService.extractTasks(text, today);
 
@@ -402,7 +407,7 @@ function buildAuthRequiredMessage(userId) {
     : `${baseUrl}/auth/google`;
   return {
     type: 'text',
-    text: `Googleアカウントの認証が必要です。\n以下のURLをブラウザで開いてログインしてください:\n${loginUrl}`
+    text: `このボットを使うには、最初にGoogleアカウントの連携が必要です。\n\n以下のURLをブラウザで開いて、ご自身のGoogleアカウントでログインしてください:\n${loginUrl}\n\n※ 連携すると、タスクやカレンダーへの登録ができるようになります。`
   };
 }
 
