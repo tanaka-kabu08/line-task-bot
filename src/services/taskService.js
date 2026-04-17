@@ -145,7 +145,11 @@ async function registerTask(taskData, tokens, lineUserId) {
     }
   } catch (error) {
     console.error('registerTask Google API error:', error.message);
-    // Google API エラーはログだけ残してDB保存は続行
+    // invalid_grant はトークン期限切れ → 上位に伝えて再認証を促す
+    if (error.message && error.message.includes('invalid_grant')) {
+      throw error;
+    }
+    // その他のGoogle APIエラーはログだけ残してDB保存は続行
   }
 
   const savedTask = {
