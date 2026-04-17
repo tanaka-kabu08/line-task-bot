@@ -134,6 +134,12 @@ async function handleEvent(event, app) {
         registeredTasks.push(registered);
       } catch (err) {
         console.error('registerTask error:', err.message);
+        if (err.message && err.message.includes('invalid_grant')) {
+          await dbService.deleteUserTokens(userId);
+          if (app.locals.googleTokens) delete app.locals.googleTokens[userId];
+          await dbService.deletePendingConfirmation(userId);
+          return reply(buildAuthRequiredMessage(userId));
+        }
       }
     }
 
@@ -188,7 +194,13 @@ async function handleEvent(event, app) {
     }
 
     // スキップなし → 即登録
-    return reply(await doRegisterSelected(pending, tokens, userId));
+    const result1 = await doRegisterSelected(pending, tokens, userId);
+    if (result1 && result1.invalidGrant) {
+      if (app.locals.googleTokens) delete app.locals.googleTokens[userId];
+      await dbService.deletePendingConfirmation(userId);
+      return reply(buildAuthRequiredMessage(userId));
+    }
+    return reply(result1);
   }
 
   // 「登録確定」（確認画面からの最終確定）
@@ -200,7 +212,13 @@ async function handleEvent(event, app) {
     if (!pending) {
       return reply({ type: 'text', text: '登録待ちのタスクがありません。' });
     }
-    return reply(await doRegisterSelected(pending, tokens, userId));
+    const result2 = await doRegisterSelected(pending, tokens, userId);
+    if (result2 && result2.invalidGrant) {
+      if (app.locals.googleTokens) delete app.locals.googleTokens[userId];
+      await dbService.deletePendingConfirmation(userId);
+      return reply(buildAuthRequiredMessage(userId));
+    }
+    return reply(result2);
   }
 
   // 「やり直す」→ 選択画面に戻る
@@ -389,6 +407,10 @@ async function doRegisterSelected(pending, tokens, userId) {
       registeredTasks.push(registered);
     } catch (err) {
       console.error('registerTask error:', err.message);
+      if (err.message && err.message.includes('invalid_grant')) {
+        await dbService.deleteUserTokens(userId);
+        return { invalidGrant: true };
+      }
     }
   }
   const emailIds = pending.tasks.map(t => t.emailId).filter(Boolean);
