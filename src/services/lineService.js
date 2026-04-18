@@ -40,7 +40,8 @@ function priorityLabel(priority) {
 function buildConfirmMessage(tasks) {
   const tasksText = tasks.map((t, i) => {
     const dateStr = t.dueDate ? formatDateJP(t.dueDate) : '期限なし';
-    return `${i + 1}. ✅ ${stripDomains(t.title)}（${dateStr}）`;
+    const timeStr = t.dueTime ? ` ${t.dueTime}` : '';
+    return `${i + 1}. ✅ ${stripDomains(t.title)}（${dateStr}${timeStr}）`;
   }).join('\n');
 
   return {
