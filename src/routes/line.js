@@ -292,6 +292,7 @@ async function handleEvent(event, app) {
 
   // --- Claude でタスク解析 ---
   const result = await claudeService.extractTasks(text, today);
+  console.log('[extractTasks]', JSON.stringify(result.tasks?.map(t => ({ title: t.title, dueDate: t.dueDate, dueTime: t.dueTime }))));
 
   // コマンド: list
   if (result.command === 'list') {
