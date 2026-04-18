@@ -140,7 +140,9 @@ async function registerTask(taskData, tokens, lineUserId) {
 
       // dueDate がある場合は Google Calendar にも登録
       if (taskData.dueDate) {
+        console.log('[calendar] addEvent input:', JSON.stringify({ dueDate: taskData.dueDate, dueTime: taskData.dueTime }));
         googleEventId = await calendarService.addEvent(taskData, tokens);
+        console.log('[calendar] addEvent success, eventId:', googleEventId);
       }
     }
   } catch (error) {
