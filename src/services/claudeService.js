@@ -37,6 +37,7 @@ async function extractTasks(text, today) {
       "title": "タスクのタイトル（簡潔に）",
       "dueDate": "YYYY-MM-DD（不明ならnull）",
       "dueTime": "HH:MM（不明ならnull）",
+      "duration": 所要時間（分単位の整数。「2時間」→120、「30分」→30、不明なら60）,
       "priority": "high または medium または low",
       "category": "仕事 または 買い物 または 家事 または 学校 または 健康 または その他",
       "notes": "補足情報（あれば、なければnull）",

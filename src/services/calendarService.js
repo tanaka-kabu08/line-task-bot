@@ -65,8 +65,11 @@ async function addEvent(taskData, tokens) {
     // dateTime形式（時刻あり）
     const startDateTime = `${taskData.dueDate}T${taskData.dueTime}:00+09:00`;
     const [h, m] = taskData.dueTime.split(':').map(Number);
-    const endH = String(h + 1).padStart(2, '0');
-    const endDateTime = `${taskData.dueDate}T${endH}:${String(m).padStart(2, '0')}:00+09:00`;
+    const durationMin = taskData.duration || 60;
+    const endTotalMin = h * 60 + m + durationMin;
+    const endH = String(Math.floor(endTotalMin / 60)).padStart(2, '0');
+    const endM = String(endTotalMin % 60).padStart(2, '0');
+    const endDateTime = `${taskData.dueDate}T${endH}:${endM}:00+09:00`;
 
     start = { dateTime: startDateTime, timeZone: 'Asia/Tokyo' };
     end = { dateTime: endDateTime, timeZone: 'Asia/Tokyo' };
